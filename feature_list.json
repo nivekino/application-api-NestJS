@@ -1,0 +1,26 @@
+{
+  "project": "application-api-NestJS",
+  "description": "API NestJS 11 + TypeORM/PostgreSQL para flujos de crédito y cobranza de banca de microcréditos (Kata Software). Backlog de nuevas features sobre la API ya migrada.",
+  "rules": {
+    "una_feature_a_la_vez": "Solo una feature puede estar 'in_progress'.",
+    "pruebas_obligatorias": "Cada criterio de aceptación debe tener una prueba (Jest) en verde.",
+    "estados_validos": ["pending", "in_progress", "done", "blocked"],
+    "definicion_de_hecho": "Ver CHECKPOINTS.MD. Una feature pasa a 'done' solo con verificación en verde y aprobación del reviewer."
+  },
+  "features": [
+    {
+      "id": 1,
+      "name": "perfil_usuario_autenticado",
+      "title": "Consultar el perfil del usuario autenticado",
+      "description": "Endpoint protegido GET /api/users/me que devuelve el perfil del usuario asociado al JWT vigente, sin exponer la contraseña. Sirve de ejemplo del flujo del harness; ajústalo o reemplázalo por tu primera feature real.",
+      "acceptance": [
+        "GET /api/users/me requiere JWT válido (JwtAuthGuard); sin token responde 401.",
+        "Devuelve el usuario del token (resuelto por sub) usando el DTO de respuesta existente, sin password.",
+        "Respeta el formato de respuesta estándar { statusCode, message, resource, isError }.",
+        "Documentado en Swagger (/api/docs) con @ApiBearerAuth y @ApiProperty en el DTO de salida.",
+        "Pruebas unitarias del controller/service que cubran: token válido devuelve perfil, y usuario inexistente responde 404."
+      ],
+      "status": "done"
+    }
+  ]
+}
