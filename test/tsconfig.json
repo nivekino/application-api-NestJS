@@ -1,0 +1,23 @@
+{
+  // Configuración de TypeScript para las pruebas e2e.
+  //
+  // Existe para que `tsc` y typescript-eslint (que usa `projectService` y busca el
+  // tsconfig más cercano) encuentren estos archivos: la raíz los excluye porque su
+  // `rootDir` es ./src y su salida es dist/.
+  //
+  // Hereda TODO de la raíz, incluido el rigor de tipos y el sistema de módulos.
+  // No redefine `moduleResolution`: `node10` está deprecado desde TypeScript 6 y
+  // desaparece en 7.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // Las pruebas viven fuera del `rootDir: ./src` de la raíz y nunca se emiten:
+    // las transpila ts-jest en memoria.
+    "rootDir": "..",
+    "noEmit": true
+  },
+  "include": ["./**/*.ts"],
+  // Obligatorio sobreescribirlo: el `exclude` de la raíz incluye "test", y al
+  // heredarse por `extends` se re-basa a "../test" — es decir, esta carpeta se
+  // excluía a sí misma y `tsc` respondía TS18003 "No inputs were found".
+  "exclude": []
+}

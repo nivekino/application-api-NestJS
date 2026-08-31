@@ -1,6 +1,6 @@
 # CP-04 — Módulo Auth: JWT + Guard
 
-**Estado:** Hecho · **Depende de:** CP-03 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** CP-03
 
 ## Objetivo
 Migrar la autenticación: login con JWT, estrategia Passport con la regla de invalidación de tokens, y

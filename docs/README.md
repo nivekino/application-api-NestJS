@@ -10,15 +10,15 @@ Migración de la API **`application-api`** (Node.js/Express 5, DDD, MongoDB) hac
 | [`00-analisis-proyectos.md`](00-analisis-proyectos.md) | Análisis comparativo de ambos proyectos: stack, arquitectura, inventario funcional y modelo de datos. |
 | [`01-plan-migracion.md`](01-plan-migracion.md) | Roadmap, mapeo de arquitectura Express→NestJS, estructura destino y verificación end-to-end. |
 | [`checkpoints/`](checkpoints/) | Tareas de migración (CP-00 a CP-06), cada una con objetivo, archivos, criterios de aceptación y estado. |
+| [`verifications.md`](verifications.md) | **El gate de dos niveles del harness:** catálogo de checks, línea base de advertencias vigente (única fuente de verdad) y bitácora de pruebas negativas. No es documentación de la migración: es la definición operativa de "verificado". |
 
-## Agente especializado
+## Estado de esta documentación
 
-La migración la ejecuta el subagente [`nestjs-migrator`](../.claude/agents/nestjs-migrator.md),
-que procesa los checkpoints en orden, uno a la vez, validando con `nest build` antes de avanzar.
+La migración está **cerrada**: los checkpoints CP-00 a CP-06 quedaron en estado `Hecho`, y estos
+documentos son **referencia histórica** — no describen el flujo de trabajo vigente.
 
-Para lanzarlo desde Claude Code:
-
-> Usa el agente **nestjs-migrator** para ejecutar el siguiente checkpoint pendiente de `docs/checkpoints/`.
+Para features nuevas el ciclo es el TDD del harness (`/feature`, `/design`), descrito en
+[`../CLAUDE.md`](../CLAUDE.md) y [`../AGENTS.MD`](../AGENTS.MD).
 
 ## Estado de los checkpoints
 

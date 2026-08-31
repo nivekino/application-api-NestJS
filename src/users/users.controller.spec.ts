@@ -59,7 +59,7 @@ describe('UsersController - GET /users/me', () => {
 
     expect(usersService.getProfile).toHaveBeenCalledWith('uuid-1');
     expect(result).toEqual(baseUserDto);
-    expect(result as Record<string, unknown>).not.toHaveProperty('password');
+    expect(result).not.toHaveProperty('password');
   });
 
   it('getMe propaga NotFoundException cuando el usuario no existe', async () => {

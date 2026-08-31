@@ -1,6 +1,6 @@
 # CP-00 — Dependencias y bootstrap
 
-**Estado:** Hecho · **Depende de:** — · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** —
 
 ## Objetivo
 Instalar las dependencias necesarias para toda la migración y dejar `main.ts` listo con la

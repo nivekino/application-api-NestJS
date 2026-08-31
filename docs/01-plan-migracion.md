@@ -1,7 +1,9 @@
 # Plan de migración — Express → NestJS 11 + PostgreSQL/TypeORM
 
-> Roadmap operativo. Lo ejecuta el agente [`nestjs-migrator`](../.claude/agents/nestjs-migrator.md),
-> un checkpoint a la vez. Análisis de origen en [`00-analisis-proyectos.md`](00-analisis-proyectos.md).
+> Roadmap operativo de la migración, **ya cerrada** (CP-00…CP-06 en estado `Hecho`). Se ejecutó un
+> checkpoint a la vez. Análisis de origen en [`00-analisis-proyectos.md`](00-analisis-proyectos.md).
+> Este documento es **referencia histórica**; el flujo vigente para features nuevas es el ciclo TDD
+> descrito en [`../CLAUDE.md`](../CLAUDE.md).
 
 ## Objetivo
 

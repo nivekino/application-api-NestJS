@@ -1,6 +1,6 @@
 # CP-02 — Módulo Users: entidad y DTOs
 
-**Estado:** Hecho · **Depende de:** CP-01 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** CP-01
 
 ## Objetivo
 Portar el modelo `User` de Mongoose a una entidad TypeORM y migrar los DTOs y el enum, añadiendo

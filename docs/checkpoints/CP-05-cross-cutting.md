@@ -1,6 +1,6 @@
 # CP-05 — Cross-cutting: respuestas, errores y logging
 
-**Estado:** Hecho · **Depende de:** CP-04 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** CP-04
 
 ## Objetivo
 Estandarizar las respuestas y errores de la API, y portar el logging de Winston. Replica el
