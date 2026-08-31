@@ -1,6 +1,6 @@
 # CP-06 — Tests y verificación end-to-end
 
-**Estado:** Hecho (parcial: e2e con BD pendiente de verificación manual) · **Depende de:** CP-05 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho (parcial: e2e con BD pendiente de verificación manual) · **Depende de:** CP-05
 
 ## Objetivo
 Añadir cobertura de tests (el origen no tenía) y verificar el flujo completo de la API migrada.

@@ -1,6 +1,6 @@
 # CP-01 — ConfigModule + conexión PostgreSQL
 
-**Estado:** Hecho · **Depende de:** CP-00 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** CP-00
 
 ## Objetivo
 Reemplazar `config.ts` y `database.ts` del origen por la configuración tipada de NestJS y la conexión

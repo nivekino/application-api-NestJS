@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+# Cache de compilacion incremental de TypeScript (`incremental: true`)
+*.tsbuildinfo
+
 # Logs
 logs
 *.log

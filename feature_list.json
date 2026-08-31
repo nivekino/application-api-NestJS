@@ -2,23 +2,68 @@
   "project": "application-api-NestJS",
   "description": "API NestJS 11 + TypeORM/PostgreSQL para flujos de crédito y cobranza de banca de microcréditos (Kata Software). Backlog de nuevas features sobre la API ya migrada.",
   "rules": {
-    "una_feature_a_la_vez": "Solo una feature puede estar 'in_progress'.",
-    "pruebas_obligatorias": "Cada criterio de aceptación debe tener una prueba (Jest) en verde.",
-    "estados_validos": ["pending", "in_progress", "done", "blocked"],
-    "definicion_de_hecho": "Ver CHECKPOINTS.MD. Una feature pasa a 'done' solo con verificación en verde y aprobación del reviewer."
+    "una_feature_a_la_vez": "Solo una feature puede estar en un estado activo (red, green, in_review).",
+    "estados_validos": ["pending", "red", "green", "in_review", "done", "blocked"],
+    "estados_activos": ["red", "green", "in_review"],
+    "ciclo": "pending -> [planner si needs_design] -> (implementer fase RED) -> red -> PUERTA HUMANA -> (implementer fase GREEN) -> green -> [reviewer] -> in_review -> done",
+    "tdd_obligatorio": "La prueba se escribe ANTES del código y se demuestra en rojo. La evidencia RED (salida de Jest fallando) se pega en progress/impl_<name>.md. Un test escrito después de que el código ya pasa no demuestra nada.",
+    "puerta_humana": "El usuario aprueba la batería de tests en rojo antes de que se implemente una sola línea. Es el único punto donde el ciclo se detiene solo.",
+    "trazabilidad": "Cada criterio de 'acceptance' tiene su entrada en 'tdd_contract' con el nombre exacto del it() que lo prueba y el archivo donde vive. El gate valida que ese texto exista realmente.",
+    "definicion_de_hecho": "Ver CHECKPOINTS.MD. Una feature pasa a 'done' solo con el gate de dos niveles cumplido (Nivel A en verde + Nivel B declarado) y veredicto APROBADO del reviewer.",
+    "baseline_advertencias": 2,
+    "baseline_fuente_de_verdad": "docs/verifications.md seccion 4. NO lo cites de memoria: un baseline obsoleto detiene al leader y hace que el reviewer rechace con el repo en estado correcto."
   },
   "features": [
     {
       "id": 1,
       "name": "perfil_usuario_autenticado",
       "title": "Consultar el perfil del usuario autenticado",
-      "description": "Endpoint protegido GET /api/users/me que devuelve el perfil del usuario asociado al JWT vigente, sin exponer la contraseña. Sirve de ejemplo del flujo del harness; ajústalo o reemplázalo por tu primera feature real.",
+      "description": "Endpoint protegido GET /api/users/me que devuelve el perfil del usuario asociado al JWT vigente, sin exponer la contraseña. Sirve de ejemplo del flujo del harness.",
       "acceptance": [
         "GET /api/users/me requiere JWT válido (JwtAuthGuard); sin token responde 401.",
         "Devuelve el usuario del token (resuelto por sub) usando el DTO de respuesta existente, sin password.",
         "Respeta el formato de respuesta estándar { statusCode, message, resource, isError }.",
         "Documentado en Swagger (/api/docs) con @ApiBearerAuth y @ApiProperty en el DTO de salida.",
         "Pruebas unitarias del controller/service que cubran: token válido devuelve perfil, y usuario inexistente responde 404."
+      ],
+      "needs_design": false,
+      "needs_design_motivo": "Cerrada antes de que existiera la fase de diseño (upgrade del harness, 2026-08-31). Clasificada retroactivamente como aditiva y totalmente especificada.",
+      "tdd": false,
+      "tdd_nota": "Feature cerrada ANTES del upgrade a TDD: no tiene evidencia RED y no se le exige (el gate solo la pide a las features con tdd:true). Su contrato se levantó retroactivamente leyendo los specs reales, y las tres brechas que destapó son deuda registrada en docs/verifications.md seccion 4 — no regresiones.",
+      "tdd_contract": [
+        {
+          "criterio": 1,
+          "nivel": "pendiente",
+          "test": null,
+          "archivo": null,
+          "nota": "Ningún test automático cubre el 401 de GET /api/users/me. El e2e existente cubre 'POST /api/users sin token devuelve 401', que es otro endpoint. Deuda D1."
+        },
+        {
+          "criterio": 2,
+          "nivel": "A",
+          "test": "getMe devuelve el DTO del usuario autenticado sin campo password",
+          "archivo": "src/users/users.controller.spec.ts"
+        },
+        {
+          "criterio": 3,
+          "nivel": "pendiente",
+          "test": null,
+          "archivo": null,
+          "nota": "El formato lo aplica el interceptor global de src/common/interceptors/response.interceptor.ts, que no tiene spec propio. Deuda D2."
+        },
+        {
+          "criterio": 4,
+          "nivel": "B",
+          "test": null,
+          "archivo": null,
+          "nota": "Swagger se verifica en Nivel B: levantar la app y revisar /api/docs. Un script no puede probar que el contrato publicado sea legible."
+        },
+        {
+          "criterio": 5,
+          "nivel": "A",
+          "test": "getMe propaga NotFoundException cuando el usuario no existe",
+          "archivo": "src/users/users.controller.spec.ts"
+        }
       ],
       "status": "done"
     }

@@ -1,6 +1,6 @@
 # CP-03 — Users: service, repositorio y controller
 
-**Estado:** Hecho · **Depende de:** CP-02 · **Responsable:** `nestjs-migrator`
+**Estado:** Hecho · **Depende de:** CP-02
 
 ## Objetivo
 Migrar la lógica de usuarios (crear y listar) y el hashing de contraseñas usando DI nativa de NestJS y

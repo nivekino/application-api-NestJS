@@ -78,7 +78,7 @@ describe('UsersService', () => {
       createdAt: now,
       updatedAt: now,
     });
-    expect(result as Record<string, unknown>).not.toHaveProperty('password');
+    expect(result).not.toHaveProperty('password');
   });
 
   it('list devuelve solo campos públicos (sin password ni email)', async () => {
@@ -94,8 +94,8 @@ describe('UsersService', () => {
     const result = await service.list();
 
     expect(result).toEqual([{ username: 'jdoe', name: 'Juan Doe', role: UserRole.USER, isActive: true }]);
-    expect(result[0] as Record<string, unknown>).not.toHaveProperty('password');
-    expect(result[0] as Record<string, unknown>).not.toHaveProperty('email');
+    expect(result[0]).not.toHaveProperty('password');
+    expect(result[0]).not.toHaveProperty('email');
   });
 
   describe('getProfile', () => {
@@ -129,7 +129,7 @@ describe('UsersService', () => {
         createdAt: now,
         updatedAt: now,
       });
-      expect(result as Record<string, unknown>).not.toHaveProperty('password');
+      expect(result).not.toHaveProperty('password');
     });
 
     it('lanza NotFoundException cuando el usuario no existe', async () => {

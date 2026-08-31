@@ -9,7 +9,11 @@ import { JwtPayload } from '../auth.service';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private readonly configService: ConfigService,
+    // Sin `private readonly`: solo se usa aquí, para leer el secreto antes del
+    // `super()`. Guardarlo como propiedad dejaba un campo muerto en la clase
+    // (lo detecta `noUnusedLocals`). El tipo del parametro sigue siendo lo que
+    // la DI de NestJS resuelve, asi que la inyeccion no cambia.
+    configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
     super({

@@ -10,19 +10,18 @@ import { App } from 'supertest/types';
  * (DB_*, JWT_SECRET) configuradas en `.env`. Si no hay BD disponible, la suite
  * se omite (skip) en lugar de fallar, para no bloquear CI sin Postgres.
  *
- * El AppModule (y su `TypeOrmModule.forRootAsync`) se carga de forma diferida
- * dentro de `beforeAll`, solo cuando hay configuración de BD, para que el skip
- * no intente inicializar la conexión.
+ * El AppModule se carga de forma DIFERIDA dentro de `beforeAll`, y no con un
+ * import estático arriba. ⚠️ No lo cambies a import estático: importar AppModule
+ * evalúa TypeORM, y si el runtime no cumple los requisitos del proyecto eso tumba
+ * la suite completa ANTES de que el skip pueda actuar — con un error de carga, no
+ * con un skip limpio. Medido el 2026-08-31 al intentar exactamente ese cambio.
+ * La regla general: la ruta del skip no debe evaluar el módulo de la aplicación.
  *
  * Para ejecutarla con BD:
  *   1. Copia `.env.example` a `.env` y completa credenciales de un Postgres de prueba.
  *   2. `npm run test:e2e`
  */
-const hasDbConfig =
-  !!process.env.DB_HOST &&
-  !!process.env.DB_NAME &&
-  !!process.env.DB_USER &&
-  !!process.env.JWT_SECRET;
+const hasDbConfig = !!process.env.DB_HOST && !!process.env.DB_NAME && !!process.env.DB_USER && !!process.env.JWT_SECRET;
 
 const describeOrSkip = hasDbConfig ? describe : describe.skip;
 
@@ -35,11 +34,19 @@ describeOrSkip('Auth + Users (e2e)', () => {
   };
 
   beforeAll(async () => {
-    // Carga diferida para no evaluar AppModule cuando la suite está omitida.
-    const { AppModule } = await import('./../src/app.module');
-    const { ResponseInterceptor } = await import(
-      './../src/common/interceptors/response.interceptor'
-    );
+    // Carga diferida: la ruta del skip no debe evaluar el módulo de la aplicación.
+    //
+    // Se usa `require` tipado con `typeof import(...)` y no `await import(...)`:
+    // bajo `moduleResolution: nodenext`, TypeScript le aplica a los import()
+    // dinámicos las reglas de resolución ESM de Node, que exigen extensión
+    // explícita (`.js`) — y esa extensión no existe en disco, así que rompería en
+    // runtime. En cambio `require` es exactamente lo que ts-jest emite aquí, y el
+    // `typeof import(...)` en posición de TIPO sí resuelve sin extensión, de modo
+    // que no se pierde nada de tipado.
+    /* eslint-disable @typescript-eslint/no-require-imports */
+    const { AppModule } = require('./../src/app.module') as typeof import('./../src/app.module');
+    const { ResponseInterceptor } = require('./../src/common/interceptors/response.interceptor') as typeof import('./../src/common/interceptors/response.interceptor');
+    /* eslint-enable @typescript-eslint/no-require-imports */
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -85,18 +92,13 @@ describeOrSkip('Auth + Users (e2e)', () => {
   });
 
   it('login con credenciales válidas devuelve { token } y permite listar usuarios', async () => {
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send(credentials);
+    const login = await request(app.getHttpServer()).post('/api/auth/login').send(credentials);
 
     if (login.status === 200) {
       const token = login.body.resource.token as string;
       expect(token).toBeDefined();
 
-      await request(app.getHttpServer())
-        .get('/api/users')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(200);
+      await request(app.getHttpServer()).get('/api/users').set('Authorization', `Bearer ${token}`).expect(200);
     } else {
       // Sin usuario semilla, el login devuelve 401 (contrato documentado).
       expect(login.status).toBe(401);
