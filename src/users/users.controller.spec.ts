@@ -6,14 +6,18 @@ import { UserRole } from './enums/user-role.enum';
 import { User } from './entities/user.entity';
 import { UserDto } from './dto/user.dto';
 
+type UsersServiceMock = jest.Mocked<Pick<UsersService, 'getProfile' | 'create' | 'list'>>;
+
 describe('UsersController - GET /users/me', () => {
   let controller: UsersController;
-  let usersService: jest.Mocked<Partial<UsersService>>;
+  let usersService: UsersServiceMock;
 
   const now = new Date();
 
-  const baseUser: User = {
-    id: 'uuid-1',
+  // Fabrica en vez de `{ ...baseUser }`: esparcir una instancia tipada como clase
+  // pierde el prototipo (regla no-misused-spread) y aqui solo queremos datos.
+  const buildUser = (id: string): User => ({
+    id,
     username: 'jdoe',
     name: 'Juan Doe',
     email: 'juan@example.com',
@@ -23,7 +27,7 @@ describe('UsersController - GET /users/me', () => {
     lastTokenIssuedAt: null,
     createdAt: now,
     updatedAt: now,
-  };
+  });
 
   const baseUserDto: UserDto = {
     id: 'uuid-1',
@@ -48,13 +52,13 @@ describe('UsersController - GET /users/me', () => {
       providers: [{ provide: UsersService, useValue: usersService }],
     }).compile();
 
-    controller = module.get<UsersController>(UsersController);
+    controller = module.get(UsersController);
   });
 
   it('getMe devuelve el DTO del usuario autenticado sin campo password', async () => {
-    (usersService.getProfile as jest.Mock).mockResolvedValue(baseUserDto);
+    usersService.getProfile.mockResolvedValue(baseUserDto);
 
-    const req = { user: baseUser };
+    const req = { user: buildUser('uuid-1') };
     const result = await controller.getMe(req);
 
     expect(usersService.getProfile).toHaveBeenCalledWith('uuid-1');
@@ -63,9 +67,9 @@ describe('UsersController - GET /users/me', () => {
   });
 
   it('getMe propaga NotFoundException cuando el usuario no existe', async () => {
-    (usersService.getProfile as jest.Mock).mockRejectedValue(new NotFoundException('Usuario no encontrado'));
+    usersService.getProfile.mockRejectedValue(new NotFoundException('Usuario no encontrado'));
 
-    const req = { user: { ...baseUser, id: 'uuid-inexistente' } };
+    const req = { user: buildUser('uuid-inexistente') };
 
     await expect(controller.getMe(req)).rejects.toBeInstanceOf(NotFoundException);
     expect(usersService.getProfile).toHaveBeenCalledWith('uuid-inexistente');

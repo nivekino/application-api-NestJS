@@ -14,8 +14,8 @@ Actúa como el agente [`leader`](../agents/leader.md) y sigue su flujo:
    de avanzar.
 
 2. **Selección:** feature de `$ARGUMENTS` o la `pending` de menor `id`. Verifica que no haya otra en
-   estado activo (`red` / `green` / `in_review`). Si ya hay una activa, **retómala donde quedó** en
-   lugar de abrir otra.
+   estado activo (`red` / `green` / `in_review`) y que tenga `tdd: true`. Si ya hay una activa,
+   **retómala donde quedó** en lugar de abrir otra.
 
 3. **Diseño (por bandera, no por criterio propio):** lee `needs_design` de la feature.
    - `true` → delega al subagente [`planner`](../agents/planner.md) (Opus). Espera
@@ -27,28 +27,30 @@ Actúa como el agente [`leader`](../agents/leader.md) y sigue su flujo:
      de seguir. Ante la duda, `true`.
 
 4. **Fase RED (delegada):** lanza el subagente `implementer` en **fase RED**. Debe escribir **solo los
-   tests**, correr `npm test`, pegar la salida en rojo en la sección *Evidencia RED*, escribir el
-   `tdd_contract` en `feature_list.json` y dejar la feature en `red`. Espera
-   `red → progress/impl_<name>.md`.
+   tests**, fijar el `red_modo` (`nuevo`: la batería falla en disco; `caracterizacion`: el código ya
+   existe y el rojo se demuestra por mutación), pegar la salida en rojo en la sección *Evidencia RED*,
+   escribir el `tdd_contract` en `feature_list.json`, dejar la feature en `red` y correr el gate hasta
+   `[OK]` (el gate entiende la fase RED). Espera `red → progress/impl_<name>.md`.
 
 5. **⏸ PUERTA HUMANA:** léele al usuario la batería de tests (nombre de cada `it()` y qué criterio de
-   `acceptance` cubre) y **detente hasta su aprobación explícita**. Es el único punto donde el ciclo se
-   detiene solo: la batería de tests es donde el alcance se decide de verdad. Si pide más casos,
-   re-delega la fase RED.
+   `acceptance` cubre), el `red_modo` y la mutación si aplica, y **detente hasta su aprobación
+   explícita**. Es el único punto donde el ciclo se detiene solo: la batería de tests es donde el
+   alcance se decide de verdad. Si pide más casos, re-delega la fase RED.
 
 6. **Fase GREEN (delegada):** con el "go", lanza el `implementer` en **fase GREEN**. Debe implementar
-   hasta que toda la batería pase, refactorizar en verde, correr el gate hasta `[OK]`, **declarar la
-   prueba de Nivel B** y dejar la feature en `green`. Espera `green → progress/impl_<name>.md`.
+   hasta que toda la batería pase, refactorizar en verde, correr el gate (build, typecheck, lint,
+   jest, cobertura) hasta `[OK]`, **declarar la prueba de Nivel B** y dejar la feature en `green`.
+   Espera `green → progress/impl_<name>.md`.
 
 7. **Revisión (delegada):** cambia la feature a `in_review` y lanza el subagente `reviewer`. Debe
-   validar contra `CHECKPOINTS.MD`, verificar la evidencia RED y la trazabilidad, correr el gate y
-   escribir el veredicto en `progress/review_<name>.md`. Léelo.
+   validar contra `CHECKPOINTS.MD`, verificar la evidencia RED (y la mutación, si aplica) y la
+   trazabilidad, correr el gate y escribir el veredicto en `progress/review_<name>.md`. Léelo.
 
 8. **Cierre:**
    - **APROBADO:** `status = done`, mueve el resumen a `progress/history.md`, resetea
      `progress/current.md`, corre `npm run harness:verify` → `[OK]`. Si se resolvió una advertencia del
-     baseline, actualízalo en `docs/verifications.md` sección 4 **y** en `feature_list.json` en esta
-     misma pasada.
+     baseline o el gate informó holgura de cobertura, actualiza `docs/verifications.md` sección 4 **y**
+     `feature_list.json` en esta misma pasada.
    - **RECHAZADO:** regresa la feature a `green`, resume los cambios requeridos y pregunta si reintenta
      la fase GREEN o la marca `blocked`.
 

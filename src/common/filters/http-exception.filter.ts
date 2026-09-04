@@ -1,4 +1,11 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Inject } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
 import type { LoggerService } from '@nestjs/common';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Request, Response } from 'express';
@@ -31,7 +38,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+    let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let resource: unknown;
 
@@ -40,7 +47,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const res = exception.getResponse();
       if (typeof res === 'string') {
         message = res;
-      } else if (res && typeof res === 'object') {
+      } else {
         const obj = res as Record<string, unknown>;
         message = (typeof obj.message === 'string' ? obj.message : undefined) ?? exception.message;
         // Detalle de validación (errores de class-validator), sin datos sensibles.

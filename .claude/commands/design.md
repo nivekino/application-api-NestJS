@@ -9,7 +9,8 @@ objetivo (por `id` o `name`); si no, toma la `pending` de **menor `id`** (**nunc
 Actúa como el agente [`leader`](../agents/leader.md) limitado a su paso de diseño:
 
 1. **Arranque:** corre `npm run harness:verify`. Si `[FAIL]`, detente y reporta. El baseline vigente de
-   advertencias de deuda vive en `docs/verifications.md` sección 4 — **no lo cites de memoria**.
+   advertencias de deuda y el piso de cobertura viven en `docs/verifications.md` sección 4 — **no los
+   cites de memoria**.
 
 2. **Selección:** feature de `$ARGUMENTS` o la `pending` de menor `id`. **No** cambies su `status`
    (sigue `pending`).
@@ -24,10 +25,11 @@ Actúa como el agente [`leader`](../agents/leader.md) limitado a su paso de dise
 
 5. **Cierre de la fase:** resume al usuario, en pocas líneas:
    - el alcance propuesto y el **precedente de la casa a espejar**;
-   - la **batería de tests propuesta** (es lo que aprobará en la puerta humana del ciclo);
+   - la **batería de tests propuesta** y su **`red_modo`** (es lo que aprobará en la puerta humana del
+     ciclo; si es `caracterizacion`, qué mutación demostrará el rojo);
    - los **acoplamientos detectados** (invalidación de JWT, `ValidationPipe` con
      `forbidNonWhitelisted`, doble envoltura del interceptor, `synchronize` sin migraciones, la entidad
-     que no debe salir por la API, datos sensibles en logs);
+     que no debe salir por la API, datos sensibles en logs, criterios vacíos en TypeORM 1.x);
    - la **alternativa descartada** y por qué;
    - las **preguntas abiertas / PENDIENTES** que requieren decisión de negocio o de plataforma.
 

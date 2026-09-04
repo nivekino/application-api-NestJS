@@ -1,0 +1,26 @@
+# Gate automatico (Nivel A) del harness en CI: la misma verificacion que corre
+# cada agente en local, sobre la version de Node acordada en .nvmrc.
+#
+# NO corre el Nivel B (test:e2e contra PostgreSQL): eso se declara en
+# progress/impl_<name>.md y lo ejecuta una persona. Ver docs/verifications.md.
+name: gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  nivel-a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run harness:verify

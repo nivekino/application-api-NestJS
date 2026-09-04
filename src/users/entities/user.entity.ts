@@ -1,4 +1,11 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
+} from 'typeorm';
 import { UserRole } from '../enums/user-role.enum';
 
 /**
@@ -34,9 +41,15 @@ export class User {
   /**
    * Marca (segundos Unix) del ultimo token emitido. Los tokens con
    * `iat < lastTokenIssuedAt` se consideran invalidos. Nullable por defecto.
+   *
+   * Es `bigint` en PostgreSQL y el driver `pg` lo devuelve como STRING (un bigint
+   * no cabe con seguridad en un `number` de JS). El tipo lo declara tal cual para
+   * que quien compare tenga que coercionar explicitamente (`JwtStrategy`), en vez
+   * de confiar en un `number` que en runtime no lo es. Se escribe como number
+   * (`UsersService.updateLastTokenIssuedAt`).
    */
   @Column({ type: 'bigint', nullable: true, default: null })
-  lastTokenIssuedAt!: number | null;
+  lastTokenIssuedAt!: number | string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -1,16 +1,30 @@
 {
   "project": "application-api-NestJS",
-  "description": "API NestJS 11 + TypeORM/PostgreSQL para flujos de crédito y cobranza de banca de microcréditos (Kata Software). Backlog de nuevas features sobre la API ya migrada.",
+  "description": "API NestJS 11 + TypeORM 1.x/PostgreSQL para flujos de crédito y cobranza de banca de microcréditos (Kata Software). Backlog de nuevas features sobre la API ya migrada.",
   "rules": {
     "una_feature_a_la_vez": "Solo una feature puede estar en un estado activo (red, green, in_review).",
     "estados_validos": ["pending", "red", "green", "in_review", "done", "blocked"],
     "estados_activos": ["red", "green", "in_review"],
     "ciclo": "pending -> [planner si needs_design] -> (implementer fase RED) -> red -> PUERTA HUMANA -> (implementer fase GREEN) -> green -> [reviewer] -> in_review -> done",
-    "tdd_obligatorio": "La prueba se escribe ANTES del código y se demuestra en rojo. La evidencia RED (salida de Jest fallando) se pega en progress/impl_<name>.md. Un test escrito después de que el código ya pasa no demuestra nada.",
+    "tdd_obligatorio": "Toda feature nace con tdd: true (lo exige el CHECK 3e). La prueba se escribe ANTES del código y se demuestra en rojo. La evidencia RED (salida de Jest fallando) se pega en progress/impl_<name>.md y debe mencionar cada archivo de la batería. Un test escrito después de que el código ya pasa no demuestra nada.",
+    "red_modo": "Cómo se demostró el rojo. 'nuevo' (por omisión): la batería FALLA en disco y el gate tolera fallos de typecheck, lint y jest SOLO en los archivos del tdd_contract. 'caracterizacion': el comportamiento ya existía, la batería pasa en disco y el rojo se demostró rompiendo el código a propósito (mutación) antes de restaurarlo; la Evidencia RED describe esa mutación.",
     "puerta_humana": "El usuario aprueba la batería de tests en rojo antes de que se implemente una sola línea. Es el único punto donde el ciclo se detiene solo.",
-    "trazabilidad": "Cada criterio de 'acceptance' tiene su entrada en 'tdd_contract' con el nombre exacto del it() que lo prueba y el archivo donde vive. El gate valida que ese texto exista realmente.",
-    "definicion_de_hecho": "Ver CHECKPOINTS.MD. Una feature pasa a 'done' solo con el gate de dos niveles cumplido (Nivel A en verde + Nivel B declarado) y veredicto APROBADO del reviewer.",
-    "baseline_advertencias": 2,
+    "trazabilidad": "Cada criterio de 'acceptance' tiene su entrada en 'tdd_contract' con el nombre exacto del it() que lo prueba y el archivo donde vive. El gate valida que ese texto exista realmente, desde el estado red.",
+    "definicion_de_hecho": "Ver CHECKPOINTS.MD. Una feature pasa a 'done' solo con el gate de dos niveles cumplido (Nivel A en verde: estructura + typecheck + lint + build + jest + cobertura; Nivel B declarado) y veredicto APROBADO del reviewer.",
+    "tdd_exentas_legacy": [
+      {
+        "id": 1,
+        "motivo": "Cerrada el 2026-06-29, antes de que existiera el ciclo TDD (upgrade del harness del 2026-08-31). Su contrato se levanto retroactivamente leyendo los specs reales. Las brechas D1/D2 que destapo las cerro la feature #2 (2026-09-03) y el baseline bajo a 0; la exencion PERMANECE porque la evidencia RED de sus tests originales no puede producirse retroactivamente, y fabricarla seria peor que declararla ausente."
+      }
+    ],
+    "baseline_advertencias": 0,
+    "cobertura_minima": {
+      "lineas": 72,
+      "sentencias": 73,
+      "funciones": 66,
+      "ramas": 61
+    },
+    "cobertura_nota": "Piso de cobertura de jest (porcentajes). Es un trinquete: solo sube. Medido el 2026-09-03 (62.2/62.6/57.6/56.3) al adoptar el CHECK 6b; se registra en docs/verifications.md seccion 4. Subido el 2026-09-03 (fase GREEN de la feature #2, red_modo caracterizacion) tras medir 75.59/76.37/69.69/64.49 con la bateria de la feature #2 en disco (holgura >= 5 puntos sobre el piso anterior). En fase RED (modo nuevo) no se evalua.",
     "baseline_fuente_de_verdad": "docs/verifications.md seccion 4. NO lo cites de memoria: un baseline obsoleto detiene al leader y hace que el reviewer rechace con el repo en estado correcto."
   },
   "features": [
@@ -29,14 +43,14 @@
       "needs_design": false,
       "needs_design_motivo": "Cerrada antes de que existiera la fase de diseño (upgrade del harness, 2026-08-31). Clasificada retroactivamente como aditiva y totalmente especificada.",
       "tdd": false,
-      "tdd_nota": "Feature cerrada ANTES del upgrade a TDD: no tiene evidencia RED y no se le exige (el gate solo la pide a las features con tdd:true). Su contrato se levantó retroactivamente leyendo los specs reales, y las tres brechas que destapó son deuda registrada en docs/verifications.md seccion 4 — no regresiones.",
+      "tdd_nota": "Feature cerrada ANTES del upgrade a TDD (2026-06-29): no tiene evidencia RED y esa evidencia no puede producirse retroactivamente, por eso sigue exenta en rules.tdd_exentas_legacy. Su contrato se levanto retroactivamente leyendo los specs reales; las brechas D1/D2 que destapo las cerro la feature #2 el 2026-09-03 (criterios 1 y 3 apuntan a esos specs). Deuda: 0.",
       "tdd_contract": [
         {
           "criterio": 1,
-          "nivel": "pendiente",
-          "test": null,
-          "archivo": null,
-          "nota": "Ningún test automático cubre el 401 de GET /api/users/me. El e2e existente cubre 'POST /api/users sin token devuelve 401', que es otro endpoint. Deuda D1."
+          "nivel": "A",
+          "test": "UsersController declara JwtAuthGuard como guard de clase, de modo que GET /api/users/me responde 401 sin JWT valido",
+          "archivo": "src/users/users.controller.guard.spec.ts",
+          "nota": "Deuda D1 cerrada por la feature #2 (2026-09-03)."
         },
         {
           "criterio": 2,
@@ -46,10 +60,10 @@
         },
         {
           "criterio": 3,
-          "nivel": "pendiente",
-          "test": null,
-          "archivo": null,
-          "nota": "El formato lo aplica el interceptor global de src/common/interceptors/response.interceptor.ts, que no tiene spec propio. Deuda D2."
+          "nivel": "A",
+          "test": "envuelve una respuesta exitosa como { statusCode, message: \"OK\", resource, isError: false }, tomando el statusCode de la respuesta HTTP",
+          "archivo": "src/common/interceptors/response.interceptor.spec.ts",
+          "nota": "Deuda D2 cerrada por la feature #2 (2026-09-03). La forma del error la cubre src/common/filters/http-exception.filter.spec.ts."
         },
         {
           "criterio": 4,
@@ -66,6 +80,90 @@
         }
       ],
       "status": "done"
+    },
+    {
+      "id": 2,
+      "name": "pruebas_guard_401_y_formato_respuesta",
+      "title": "Cerrar la deuda D1/D2: pruebas del guard de GET /api/users/me y del formato estándar de respuesta y error",
+      "description": "Pruebas de caracterizacion (red_modo: caracterizacion) sobre codigo existente que no tenia spec propio: el guard de clase de UsersController (D1) y el envoltorio global ResponseInterceptor + HttpExceptionFilter (D2). No cambia codigo de produccion. Al cerrarla, el tdd_contract de la feature #1 apunta a estos tests en sus criterios 1 y 3 y el baseline de advertencias baja a 0; la exencion legacy de la feature #1 permanece (sin evidencia RED retroactiva posible) pero ya sin deuda asociada. Hallazgo secundario registrado como feature #4.",
+      "acceptance": [
+        "UsersController declara JwtAuthGuard como guard de clase (metadato de guards de NestJS), de modo que GET /api/users/me responde 401 sin JWT válido.",
+        "ResponseInterceptor envuelve toda respuesta exitosa como { statusCode, message: 'OK', resource, isError: false }, tomando statusCode de la respuesta HTTP.",
+        "HttpExceptionFilter serializa una HttpException como { statusCode, message, isError: true } y los errores de validación de class-validator como message 'Validación fallida' con resource.errors.",
+        "HttpExceptionFilter convierte un Error no HTTP en 500 'Internal server error' y registra solo método, ruta, status y mensaje en el logger (nunca el cuerpo de la petición)."
+      ],
+      "needs_design": false,
+      "needs_design_motivo": "Aditiva y totalmente especificada: solo agrega specs de caracterización sobre código existente de src/common/ y src/users/. No modifica el interceptor ni el filtro (no dispara D5), ni contratos, esquema o dependencias.",
+      "tdd": true,
+      "red_modo": "caracterizacion",
+      "tdd_contract": [
+        {
+          "criterio": 1,
+          "nivel": "A",
+          "test": "UsersController declara JwtAuthGuard como guard de clase, de modo que GET /api/users/me responde 401 sin JWT valido",
+          "archivo": "src/users/users.controller.guard.spec.ts"
+        },
+        {
+          "criterio": 2,
+          "nivel": "A",
+          "test": "envuelve una respuesta exitosa como { statusCode, message: \"OK\", resource, isError: false }, tomando el statusCode de la respuesta HTTP",
+          "archivo": "src/common/interceptors/response.interceptor.spec.ts"
+        },
+        {
+          "criterio": 3,
+          "nivel": "A",
+          "test": "HttpExceptionFilter serializa una HttpException como { statusCode, message, isError: true }",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        },
+        {
+          "criterio": 3,
+          "nivel": "A",
+          "test": "HttpExceptionFilter convierte los errores de validación de class-validator en message \"Validación fallida\" con resource.errors",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        },
+        {
+          "criterio": 4,
+          "nivel": "A",
+          "test": "HttpExceptionFilter convierte una excepción no HTTP en 500 \"Internal server error\" y registra solo método, ruta, status y mensaje (nunca el cuerpo de la petición)",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        }
+      ],
+      "status": "done"
+    },
+    {
+      "id": 3,
+      "name": "migracion_nestjs_12_esm",
+      "title": "Migrar el framework a NestJS 12 (paquetes ESM)",
+      "description": "NestJS 12.0.1 (publicado el 2026-08-27) distribuye todos los paquetes @nestjs/* solo como ESM; una app CommonJS los consume vía require(esm). Bloqueos medidos el 2026-09-03: nest-winston declara peer @nestjs/common ^5..^11 y no tiene soporte v12 (gremo/nest-winston#935, abierto el 2026-09-01); Jest solo soporta require() de ESM en Node >= 24.9 (Jest 30.4+); el CLI 12 exige Node >= 24.15 para nest new/generate/upgrade. Esta feature se diseña primero: decide si nest-winston se reemplaza por un LoggerService propio en src/common/logger (D5) y fija el piso de Node.",
+      "acceptance": [
+        "La app arranca y toda la batería unitaria pasa con @nestjs/* 12.x instalados sin --legacy-peer-deps ni --force.",
+        "El logger Winston sigue operando (nest-winston con soporte v12, o un LoggerService propio con su spec) y HttpExceptionFilter sigue registrando método, ruta y status.",
+        "El Nivel B (npm run test:e2e contra PostgreSQL) pasa con la versión de Node fijada en .nvmrc, que cumple el requisito del CLI 12.",
+        "CLAUDE.md, docs/verifications.md seccion 6 y .claude/agents/*.md reflejan las versiones nuevas y el piso de Node."
+      ],
+      "needs_design": true,
+      "needs_design_motivo": "D9 - sube la versión mayor del framework (11 -> 12) y de todo @nestjs/*, con cambio de empaquetado a ESM puro. D5 - si nest-winston se reemplaza, toca el logger transversal de src/common/. D8 - puede mover el piso de Node (engines, .nvmrc).",
+      "tdd": true,
+      "tdd_contract": [],
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "name": "error_500_sin_detalle_interno",
+      "title": "HttpExceptionFilter no expone el mensaje interno de un Error no controlado en el 500",
+      "description": "Hoy, si una excepcion no controlada es instancia de Error (no HttpException), el filtro global devuelve al cliente su message real en el cuerpo del 500 (src/common/filters/http-exception.filter.ts, rama instanceof Error). Eso puede filtrar detalles internos (rutas, SQL, nombres de columnas, mensajes de driver) a un consumidor externo. Detectado por el reviewer de la feature #2 (2026-09-03). El mensaje real debe seguir llegando al logger (queda en disco, no en la respuesta).",
+      "acceptance": [
+        "Ante una excepcion no controlada que es instancia de Error, el cuerpo de la respuesta es { statusCode: 500, message: \"Internal server error\", isError: true } sin el message interno ni resource.",
+        "El logger recibe metodo, ruta, status y el message REAL del Error (para diagnostico), nunca el cuerpo de la peticion.",
+        "Las HttpException (4xx/5xx lanzadas a proposito por la app) conservan su message tal como hoy, incluidos los errores de validacion de class-validator.",
+        "Los specs existentes de src/common/filters/http-exception.filter.spec.ts siguen en verde."
+      ],
+      "needs_design": true,
+      "needs_design_motivo": "D5 - toca src/common/filters/http-exception.filter.ts, filtro global que aplica a todos los endpoints. D6 - cambia que dato sale por la respuesta de API y cual queda solo en el log.",
+      "tdd": true,
+      "red_modo": "nuevo",
+      "tdd_contract": [],
+      "status": "pending"
     }
   ]
 }

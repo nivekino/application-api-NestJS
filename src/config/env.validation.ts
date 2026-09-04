@@ -1,5 +1,14 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  validateSync,
+} from 'class-validator';
 
 export enum NodeEnvironment {
   Development = 'development',
@@ -61,7 +70,9 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
   if (errors.length > 0) {
     // Se reportan solo las propiedades y restricciones que fallaron, nunca los
     // valores (para no filtrar secretos como JWT_SECRET o DB_PASS).
-    const detail = errors.map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`).join('; ');
+    const detail = errors
+      .map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`)
+      .join('; ');
     throw new Error(`Validacion de variables de entorno fallida -> ${detail}`);
   }
 

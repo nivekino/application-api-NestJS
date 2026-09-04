@@ -1,7 +1,7 @@
 # Documentación de migración Express → NestJS
 
 Migración de la API **`application-api`** (Node.js/Express 5, DDD, MongoDB) hacia este proyecto
-**`application-api-NestJS`** (NestJS 11) usando **PostgreSQL + TypeORM**.
+**`application-api-NestJS`** (NestJS 11, hoy 11.2 con TypeORM 1.x) usando **PostgreSQL + TypeORM**.
 
 ## Índice
 
@@ -10,7 +10,7 @@ Migración de la API **`application-api`** (Node.js/Express 5, DDD, MongoDB) hac
 | [`00-analisis-proyectos.md`](00-analisis-proyectos.md) | Análisis comparativo de ambos proyectos: stack, arquitectura, inventario funcional y modelo de datos. |
 | [`01-plan-migracion.md`](01-plan-migracion.md) | Roadmap, mapeo de arquitectura Express→NestJS, estructura destino y verificación end-to-end. |
 | [`checkpoints/`](checkpoints/) | Tareas de migración (CP-00 a CP-06), cada una con objetivo, archivos, criterios de aceptación y estado. |
-| [`verifications.md`](verifications.md) | **El gate de dos niveles del harness:** catálogo de checks, línea base de advertencias vigente (única fuente de verdad) y bitácora de pruebas negativas. No es documentación de la migración: es la definición operativa de "verificado". |
+| [`verifications.md`](verifications.md) | **El gate de dos niveles del harness:** catálogo de checks (incluido el comportamiento en fase RED), línea base de advertencias y piso de cobertura vigentes (única fuente de verdad), bitácora de pruebas negativas y techos del toolchain (TypeScript 7, NestJS 12). No es documentación de la migración: es la definición operativa de "verificado". |
 
 ## Estado de esta documentación
 

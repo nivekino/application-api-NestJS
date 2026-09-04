@@ -3,14 +3,13 @@
   // El build de producción usa tsconfig.build.json, que extiende este y excluye
   // pruebas; las e2e usan test/tsconfig.json.
   //
-  // `target` y `lib` siguen la base oficial `@tsconfig/node24` de tsconfig/bases,
-  // que es el techo del compilador instalado (TypeScript 5.9.x: su `target` máximo
-  // es es2024 y no trae `lib.es2025` ni `esnext.temporal` — verificado, no supuesto).
-  // Para subir a la base de Node 26 (`target: es2025`) hay que actualizar
-  // TypeScript a 6.x o 7.x primero; mientras tanto, es2024 es la configuración más
-  // reciente que realmente compila aquí.
+  // Compilador: TypeScript 6.0.x (fijado con `~` en package.json). Es el techo del
+  // toolchain, no del lenguaje: typescript-eslint declara `typescript <6.1.0` y
+  // ts-jest `<7`. TypeScript 7 (compilador nativo) queda bloqueado por los dos.
+  // Detalle y condiciones para subir: docs/verifications.md §6.
   "compilerOptions": {
     // --- Objetivo y librerías ---
+    // Base oficial `@tsconfig/node24`: target/lib es2024 (Node 24 LTS, Krypton).
     "target": "ES2024",
     // Solo "ES2024", sin las entradas `ESNext.*` que sí trae la base oficial de
     // Node 24. Motivo medido, no preferencia: bajo TypeScript 6 `ESNext.Iterator`
@@ -28,29 +27,28 @@
     // --- Módulos y salida ---
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "outDir": "./dist",
     // Explícito a propósito: fija el layout de `dist/` (dist/main.js, no
     // dist/src/main.js) para que `npm run start:prod` -> `node dist/main` siga
-    // resolviendo. Sin declararlo, TypeScript lo infiere del directorio común de
-    // los archivos incluidos, así que agregar o excluir una carpeta movería la
-    // salida en silencio.
+    // resolviendo. Desde TypeScript 6 el valor por omisión es el directorio del
+    // tsconfig, así que sin declararlo la salida se movería en silencio.
     "rootDir": "./src",
-    // Sin `baseUrl`: está deprecado desde TypeScript 6 y deja de funcionar en 7.
-    // Aquí no servía para nada — no hay `paths` que mapear — y su única función
-    // real era habilitar imports absolutos, que este proyecto no usa.
+    // Sin `esModuleInterop` ni `allowSyntheticDefaultImports`: desde TypeScript 6
+    // son obligatoriamente `true` y declararlos es ruido. Sin `baseUrl`: está
+    // deprecado desde 6 y desaparece en 7; aquí no había `paths` que mapear.
 
     // --- Decoradores ---
     // NestJS y TypeORM dependen de los decoradores legacy (Stage 2) y de los
     // metadatos de tipo en runtime: de ahí sale la inyección de dependencias.
     // NO migres a los decoradores estándar de TS 5+: `emitDecoratorMetadata` no
     // aplica a ellos y la DI de NestJS deja de resolver tipos.
-    // Por lo mismo NO habilites `verbatimModuleSyntax`: convertiría los imports de
-    // tipos en `import type`, y un tipo borrado en compilación no puede emitirse
-    // como metadato.
+    // Por lo mismo NO habilites `verbatimModuleSyntax` ni la regla
+    // `consistent-type-imports` del linter: convertirían los imports de tipos en
+    // `import type`, y un tipo borrado en compilación no puede emitirse como
+    // metadato. Tampoco `erasableSyntaxOnly`: prohíbe las parameter properties
+    // (`constructor(private readonly x: X)`) que son la base de la DI de NestJS.
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
 
@@ -62,12 +60,15 @@
     // check activo, `@Column() username: string;` sería un error de compilación en
     // cada entidad. No lo "arregles" poniéndolo en true: rompe el build completo.
     "strictPropertyInitialization": false,
+    // Un índice fuera de rango o una llave ausente devuelven `T | undefined`, no
+    // `T`. Obliga a comprobar antes de usar (p. ej. `mock.calls[0]`), que es
+    // exactamente el tipo de error que un test con mocks deja pasar en silencio.
+    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "forceConsistentCasingInFileNames": true,
     // Verifica el código propio pero no los .d.ts de node_modules: sin esto, un
     // tipo roto en una dependencia transitiva tumba el build propio.
     "skipLibCheck": true,

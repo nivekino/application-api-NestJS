@@ -16,7 +16,11 @@ export function buildWinstonOptions(): WinstonModuleOptions {
   const env = process.env.NODE_ENV ?? 'development';
   const level = env === 'development' ? 'debug' : 'info';
 
-  const fileFormat = winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), winston.format.errors({ stack: true }), winston.format.json());
+  const fileFormat = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    winston.format.errors({ stack: true }),
+    winston.format.json(),
+  );
 
   const transports: winston.transport[] = [
     new winston.transports.Console({

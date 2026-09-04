@@ -31,8 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Regla de invalidación de tokens: rechazar si el token fue emitido antes
     // del último login registrado. `lastTokenIssuedAt` es bigint -> el driver
-    // pg lo devuelve como string, por eso se coerciona a Number.
-    if (user.lastTokenIssuedAt !== null && user.lastTokenIssuedAt !== undefined) {
+    // pg lo devuelve como string (asi lo declara la entidad), por eso se
+    // coerciona a Number antes de comparar.
+    if (user.lastTokenIssuedAt !== null) {
       const lastIssued = Number(user.lastTokenIssuedAt);
       if (payload.iat < lastIssued) {
         throw new UnauthorizedException();

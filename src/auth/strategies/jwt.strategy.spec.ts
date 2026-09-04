@@ -6,11 +6,13 @@ import { User } from '../../users/entities/user.entity';
 import { UserRole } from '../../users/enums/user-role.enum';
 import { JwtPayload } from '../auth.service';
 
+type UsersServiceMock = jest.Mocked<Pick<UsersService, 'findById'>>;
+
 describe('JwtStrategy (regla de invalidación de tokens)', () => {
   let strategy: JwtStrategy;
-  let usersService: jest.Mocked<Partial<UsersService>>;
+  let usersService: UsersServiceMock;
 
-  const buildUser = (lastTokenIssuedAt: number | null): User => ({
+  const buildUser = (lastTokenIssuedAt: User['lastTokenIssuedAt']): User => ({
     id: 'uuid-1',
     username: 'jdoe',
     name: 'Juan Doe',
@@ -39,40 +41,32 @@ describe('JwtStrategy (regla de invalidación de tokens)', () => {
   });
 
   it('rechaza el token si el usuario no existe', async () => {
-    (usersService.findById as jest.Mock).mockResolvedValue(null);
-    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    usersService.findById.mockResolvedValue(null);
+    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('acepta el token si iat >= lastTokenIssuedAt', async () => {
-    (usersService.findById as jest.Mock).mockResolvedValue(buildUser(1000));
+    usersService.findById.mockResolvedValue(buildUser(1000));
     await expect(strategy.validate(payload(1000))).resolves.toMatchObject({
       id: 'uuid-1',
     });
   });
 
   it('rechaza el token previo si iat < lastTokenIssuedAt (re-login)', async () => {
-    (usersService.findById as jest.Mock).mockResolvedValue(buildUser(2000));
-    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    usersService.findById.mockResolvedValue(buildUser(2000));
+    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('acepta el token si lastTokenIssuedAt es null', async () => {
-    (usersService.findById as jest.Mock).mockResolvedValue(buildUser(null));
+    usersService.findById.mockResolvedValue(buildUser(null));
     await expect(strategy.validate(payload(1000))).resolves.toMatchObject({
       id: 'uuid-1',
     });
   });
 
   it('coerce bigint-string de pg al comparar', async () => {
-    // El driver pg devuelve bigint como string.
-    (usersService.findById as jest.Mock).mockResolvedValue(
-      buildUser('2000' as unknown as number),
-    );
-    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    // El driver pg devuelve bigint como string; la entidad lo declara asi.
+    usersService.findById.mockResolvedValue(buildUser('2000'));
+    await expect(strategy.validate(payload(1000))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

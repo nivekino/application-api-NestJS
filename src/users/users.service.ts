@@ -34,7 +34,8 @@ export class UsersService {
 
   async list(): Promise<UserListItemDto[]> {
     const users = await this.userRepository.find({
-      select: ['username', 'name', 'role', 'isActive'],
+      // TypeORM 1.x: 'select' es un objeto tipado por columna (string[] ya no compila).
+      select: { username: true, name: true, role: true, isActive: true },
     });
 
     return users.map((u) => ({
