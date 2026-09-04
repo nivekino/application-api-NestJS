@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import type { Repository } from 'typeorm';
-import type { ApiResponse } from '../src/common/interceptors/response.interceptor';
+import type { ApiResponse } from '../src/common/interfaces/api-response.interface';
 import type { User } from '../src/users/entities/user.entity';
 
 /**
@@ -25,6 +25,13 @@ import type { User } from '../src/users/entities/user.entity';
  * ruta del skip no debe evaluar el módulo de la aplicación, o un runtime que no
  * cumpla los requisitos tumba la suite completa ANTES de que el skip pueda
  * actuar — con un error de carga, no con un skip limpio. Medido el 2026-08-31.
+ *
+ * Feature #5: no se registra `app.useGlobalInterceptors(new ResponseInterceptor())`
+ * aqui. `AppModule` ya lo declara como `APP_INTERCEPTOR` global (src/app.module.ts);
+ * registrarlo tambien aqui envuelve la respuesta dos veces (`resource` termina
+ * siendo `{ statusCode, message, resource, isError }`). `ValidationPipe` SI hace
+ * falta: `AppModule` no declara `APP_PIPE`, lo hace `main.ts`, que esta suite no
+ * ejecuta.
  *
  * Para ejecutarla con BD:
  *   1. Copia `.env.example` a `.env` y completa credenciales de un Postgres de prueba.
@@ -59,8 +66,6 @@ describeOrSkip('Auth + Users (e2e)', () => {
     // que no se pierde nada de tipado.
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { AppModule } = require('../src/app.module') as typeof import('../src/app.module');
-    const { ResponseInterceptor } =
-      require('../src/common/interceptors/response.interceptor') as typeof import('../src/common/interceptors/response.interceptor');
     const { User: UserEntity } =
       require('../src/users/entities/user.entity') as typeof import('../src/users/entities/user.entity');
     const { UserRole } =
@@ -83,7 +88,6 @@ describeOrSkip('Auth + Users (e2e)', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ResponseInterceptor());
     await app.init();
 
     // Semilla propia de la suite: mismo hash que produce la API (bcrypt, salt 10).
@@ -149,5 +153,53 @@ describeOrSkip('Auth + Users (e2e)', () => {
       .post('/api/auth/login')
       .send({ username: credentials.username, password: 'incorrecta' });
     expect(login.status).toBe(401);
+  });
+
+  it('un token emitido antes del ultimo login queda invalidado: el token viejo responde 401 y el nuevo 200', async () => {
+    const primerLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send(credentials);
+    const tokenViejo = (primerLogin.body as ApiResponse<{ token: string }>).resource?.token ?? '';
+
+    // AuthService.login firma con iat en segundos y guarda ese mismo valor en
+    // lastTokenIssuedAt (rechazo estricto: payload.iat < lastIssued). Dos logins
+    // en el mismo segundo producen iat identicos y el token "viejo" seguiria
+    // siendo valido, asi que se espera mas de 1s antes del segundo login.
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const segundoLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send(credentials);
+    const tokenNuevo = (segundoLogin.body as ApiResponse<{ token: string }>).resource?.token ?? '';
+
+    const conTokenViejo = await request(app.getHttpServer())
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${tokenViejo}`);
+    const conTokenNuevo = await request(app.getHttpServer())
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${tokenNuevo}`);
+
+    expect(conTokenViejo.status).toBe(401);
+    expect(conTokenNuevo.status).toBe(200);
+  });
+
+  it('POST /api/users con un campo no declarado en el DTO responde 400 por el ValidationPipe global', async () => {
+    const login = await request(app.getHttpServer()).post('/api/auth/login').send(credentials);
+    const token = (login.body as ApiResponse<{ token: string }>).resource?.token ?? '';
+
+    const res = await request(app.getHttpServer())
+      .post('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        username: `campo_extra_${suffix}`,
+        name: 'E2E User',
+        email: `campo_extra_${suffix}@example.com`,
+        password: credentials.password,
+        role: 'admin',
+        active: true,
+        campoNoDeclarado: 'no deberia pasar',
+      });
+
+    expect(res.status).toBe(400);
   });
 });

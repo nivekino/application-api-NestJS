@@ -26,11 +26,21 @@ export class EnvironmentVariables {
   @IsEnum(NodeEnvironment)
   NODE_ENV: NodeEnvironment = NodeEnvironment.Development;
 
+  // La anotacion ": number" es load-bearing, no estilo: con emitDecoratorMetadata,
+  // TypeScript emite design:type a partir de la anotacion; sin ella emite Object y
+  // plainToInstance(..., { enableImplicitConversion: true }) no tiene a que convertir,
+  // asi que la cadena '3000' que SIEMPRE entrega el entorno llega intacta a
+  // @IsInt/@Min/@Max y la validacion la rechaza (mismo patron que DB_PORT!: number).
+  // "readonly" es obligatorio (y no solo declarativo): @typescript-eslint/no-inferrable-types
+  // trae autofix que BORRA la anotacion de tipo cuando puede inferirse del valor por
+  // omision, y el hook PostToolUse corre `eslint --fix` en cada guardado; la regla salta
+  // las propiedades readonly, asi que sin esta palabra el propio tooling del repo
+  // reintroduce el defecto en silencio en el siguiente guardado.
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(65535)
-  PORT = 3000;
+  readonly PORT: number = 3000;
 
   @IsString()
   @IsNotEmpty()
