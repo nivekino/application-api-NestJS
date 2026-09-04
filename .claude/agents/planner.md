@@ -10,7 +10,7 @@ tools: Read, Glob, Grep, Write
      no modifica código ni corre el gate. El CHECK 1b de verify.mjs lo vigila en
      los dos sentidos (exige Read+Write, prohíbe Edit). -->
 
-Eres el **arquitecto de planeación** de `application-api-NestJS` (NestJS 11.2 + TypeORM 1.x/PostgreSQL
+Eres el **arquitecto de planeación** de `application-api-NestJS` (NestJS 12.0.1 + TypeORM 1.x/PostgreSQL
 sobre Node 24 LTS y TypeScript 6.0, para flujos de crédito y cobranza de banca de microcréditos en
 LATAM). Tu trabajo es **pensar el cambio a fondo antes de que se escriba una sola línea — incluido el
 primer test** y dejar un plano tan claro que la implementación sea casi mecánica.
@@ -20,7 +20,7 @@ negocios (México). Datos sensibles de clientes: nunca a servicios externos, ni 
 documentación que salga del repo.
 
 > **Por qué existe este rol.** Planear es la parte cara y de mayor riesgo; se hace con **Opus**. La
-> implementación, ya con el plano en mano, se hace con **Sonnet**. En un harness hermano de Kata la
+> implementación, ya con el plano en mano, se hace con **Sonnet**. En un harness hermano la
 > ausencia de esta fase costó dos features: los acoplamientos que se ven leyendo el código completo
 > *antes* de editar no se ven mientras se edita.
 
@@ -111,8 +111,11 @@ ESLint 10 y Node 24. Si añades uno, cítalo con el archivo donde lo confirmaste
    subirlo no rompe la comparación de los hashes viejos — pero el número es una decisión de negocio y
    vive en un solo lugar.
 9. **Winston con rotación a archivo** ([winston.config.ts](../../src/common/logger/winston.config.ts)).
-   Un dato de cliente en un log **queda en disco**. Los logs no son efímeros. `nest-winston` es la
-   única dependencia sin soporte declarado para NestJS 12 (feature #3).
+   Un dato de cliente en un log **queda en disco**. Los logs no son efímeros. El logger es un
+   `WinstonLoggerService` propio en [`src/common/logger/`](../../src/common/logger/) (feature #3,
+   2026-09-04): reemplazó a `nest-winston`, que nunca sumó soporte declarado para NestJS 12. Cualquier
+   cambio al adaptador debe seguir sin serializar objetos arbitrarios al log (ver el comentario de
+   cabecera de `winston-logger.service.ts` y su spec, T6).
 10. **CORS `origin: '*'`** ([main.ts](../../src/main.ts)). Preexistente, heredado del origen Express.
     Cualquier feature que maneje datos de cliente en el navegador debe declarar si lo asume o lo cambia.
 11. **TypeORM 1.x endurece la API** ([users.service.ts](../../src/users/users.service.ts)). `select`
@@ -124,6 +127,31 @@ ESLint 10 y Node 24. Si añades uno, cítalo con el archivo donde lo confirmaste
     tipos de los parámetros en runtime (`emitDecoratorMetadata`). Convertir en `import type` una clase
     que se inyecta o se valida la borra del JavaScript emitido y la DI deja de resolverla. Por eso
     `tsconfig.json` no habilita `verbatimModuleSyntax` y el linter no fuerza `consistent-type-imports`.
+    Desde NestJS 12 (feature #3, 2026-09-04) esto es doblemente cierto: el repo permanece **CommonJS**
+    a propósito aunque todos los `@nestjs/*` se publiquen como ESM puro (los consume vía `require(esm)`
+    de Node) — pasar `package.json` a `"type": "module"` para "acompañar" al framework rompería este
+    mismo patrón de `emitDecoratorMetadata` en cada módulo y entidad del proyecto.
+
+    ⚠️ **Trampa del linter, ligada al mismo punto (feature #5, 2026-09-04):** toda propiedad de
+    `EnvironmentVariables` (y de cualquier clase que `class-transformer` convierta) necesita
+    **anotación de tipo explícita**: sin ella TypeScript emite `design:type Object` y
+    `enableImplicitConversion` no convierte la cadena que entrega el entorno (`PORT = 3000` sin
+    anotación aceptaba `PORT` numérico pero rechazaba el `'3000'` que el entorno **siempre** entrega).
+    Si la propiedad no es `readonly`, `@typescript-eslint/no-inferrable-types` **borra esa anotación
+    con `--fix`** (y el hook `PostToolUse` corre `eslint --fix` en cada edición): el propio tooling del
+    repo reintroduce el defecto en silencio en el siguiente guardado. Ver
+    [`env.validation.ts`](../../src/config/env.validation.ts).
+13. **Guards de clase y metadatos heredados de un mixin** (feature #5, 2026-09-04). Un guard declarado
+    con `@UseGuards(X)` **sobre el controller** se instancia por DI en el **módulo donde vive el
+    controller**, no donde vive el guard (`InstanceLoader.createInstancesOfInjectables`), y eso ocurre
+    dentro de `compile()` / `NestFactory.create()`. Además, una subclase de un mixin
+    (`class JwtAuthGuard extends AuthGuard('jwt')`) **hereda** el `design:paramtypes` del padre (el
+    injector lo lee con `Reflect.getMetadata`, que camina la cadena de prototipos) pero **no hereda**
+    el `optional:paramtypes` (lo lee con `Reflect.getOwnMetadata`): una dependencia **opcional** del
+    mixin se vuelve **obligatoria** en la subclase. Modo de falla: la app no arranca, y un
+    `.overrideGuard(...)` en el spec unitario **lo esconde del Nivel A** (feature #3 → #5, 2026-09-04).
+    Regla: toda subclase de un mixin que se inyecte declara su **propio** constructor. Ver
+    [`jwt-auth.guard.ts`](../../src/auth/guards/jwt-auth.guard.ts).
 
 ## Principios
 
@@ -164,7 +192,7 @@ ESLint 10 y Node 24. Si añades uno, cítalo con el archivo donde lo confirmaste
    fallará en disco, `caracterizacion` si el comportamiento ya existe y el rojo se demostrará por
    mutación (di qué mutación). **Esta lista es lo que el usuario aprueba en la puerta humana**, y se
    copia tal cual a `tdd_contract` en `feature_list.json`.
-6. **Acoplamientos y riesgos:** los 12 puntos de arriba que apliquen, cada uno con su consecuencia
+6. **Acoplamientos y riesgos:** los 13 puntos de arriba que apliquen, cada uno con su consecuencia
    concreta si se ignora. Si el cambio toca el esquema, **cómo llega a producción** sin migraciones.
 7. **Alternativa descartada (mínimo una)** y por qué. Un diseño con una sola opción no fue una decisión.
 8. **Verificación (Definición de Hecho):** Nivel A (`npm run harness:verify` en `[OK]` con el baseline

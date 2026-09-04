@@ -1,8 +1,12 @@
 # application-api-NestJS
 
-API de **Kata Software** para flujos de crédito y cobranza de banca de microcréditos en LATAM, migrada
-desde Express hacia **NestJS 11 + TypeORM 1.x + PostgreSQL**. Los datos de clientes son sensibles: nada
+API de **aprendizaje personal** para flujos de crédito y cobranza, migrada
+desde Express hacia **NestJS 12 + TypeORM 1.x + PostgreSQL**. Los datos de clientes son sensibles: nada
 de contraseñas, secretos ni cadenas de conexión en logs, respuestas ni documentación.
+
+El repositorio sigue siendo **CommonJS** (`module: nodenext` con emisión CommonJS): NestJS 12 publica
+todos los `@nestjs/*` como ESM puro, y esta app los consume con el `require(esm)` nativo de Node 24,
+con Jest arrancado con `--experimental-vm-modules` (ver `docs/verifications.md` §6).
 
 El repositorio se opera con un **harness de ingeniería** (estado en disco + verificación ejecutable +
 roles con autoridad separada) en ciclo **TDD estricto**. Antes de tocar código lee
@@ -12,7 +16,7 @@ roles con autoridad separada) en ciclo **TDD estricto**. Antes de tocar código 
 
 | Herramienta | Versión | Dónde se fija |
 |---|---|---|
-| Node.js | **24 LTS** (`.nvmrc`: 24.20.0). Piso `>=24.11.0` | `engines` en `package.json`, `.nvmrc`, `.npmrc` (`engine-strict`) |
+| Node.js | **24 LTS** (`.nvmrc`: 24.20.0). Piso `>=24.15.0` | `engines` en `package.json`, `.nvmrc`, `.npmrc` (`engine-strict`) |
 | npm | `>=10` | `engines` |
 | TypeScript | `~6.0.3` (techo del toolchain, ver `docs/verifications.md` §6) | `package.json` |
 | PostgreSQL | cualquier versión soportada por `pg` 8.x | `.env` (ver `.env.example`) |
@@ -40,6 +44,22 @@ npm run start:dev           # API en http://localhost:3000/api, Swagger en /api/
 | `npm run format` / `npm run format:check` | Prettier (`printWidth` 100, LF). |
 | `npm test` / `npm run test:cov` | Pruebas unitarias con Jest 30 (ts-jest). |
 | `npm run test:e2e` | **Nivel B:** e2e contra PostgreSQL real; se omite (skip) sin variables `DB_*`/`JWT_SECRET`. |
+| `npm run test:e2e:docker` | **Nivel B en un paso:** levanta PostgreSQL 17 desechable con `compose.yaml`, corre la e2e y lo borra (`-- --keep` lo deja arriba). Requiere Docker. |
+
+## Docker (Nivel B y despliegue)
+
+`Dockerfile` construye la API en dos etapas sobre la misma versión de Node de `.nvmrc`;
+`compose.yaml` levanta PostgreSQL 17 (en memoria, desechable) y, con `--profile app`, la API.
+
+```bash
+npm run test:e2e:docker                              # suite e2e contra PostgreSQL en Docker
+docker compose --profile app up -d --build --wait    # API en http://localhost:3000/api + Swagger en /api/docs
+docker compose --profile app down -v                 # apaga y borra todo
+```
+
+Las credenciales por omisión de `compose.yaml` son de esa base vacía y temporal; se sobreescriben con
+variables de entorno o con tu `.env`. CI (`.github/workflows/gate.yml`) corre el gate, la e2e contra
+un PostgreSQL efímero y un smoke de la imagen con el mismo `compose.yaml`.
 
 ## Verificación: gate de dos niveles
 
@@ -65,4 +85,4 @@ feature_list.json    backlog, reglas del harness, baseline y piso de cobertura
 
 ## Licencia
 
-UNLICENSED — uso interno de Kata Software.
+UNLICENSED — proyecto personal de aprendizaje, sin licencia de uso.

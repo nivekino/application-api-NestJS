@@ -35,6 +35,7 @@ Este archivo es un **mapa, no una biblia**: lee sólo lo que necesites, cuando l
 | `.claude/agents/` | Definiciones de los cuatro roles | Al delegar |
 | `scripts/harness/verify.mjs` | El gate (Nivel A). Sus comentarios explican el **por qué** de cada check | Si un check falla y no entiendes el motivo |
 | `.nvmrc`, `.npmrc`, `.gitattributes`, `.prettierrc`, `eslint.config.mjs`, `tsconfig*.json` | Toolchain acordado (Node, engines, LF, formato, lint, compilador) | Al tocar configuración; cada uno explica sus decisiones |
+| `compose.yaml`, `Dockerfile`, `scripts/e2e-docker.mjs`, `.github/workflows/gate.yml` | **Nivel B reproducible:** PostgreSQL desechable + imagen de la API, y lo que CI ejecuta (gate, e2e, smoke) | Al ejecutar o declarar el Nivel B |
 
 ## 3. El ciclo
 

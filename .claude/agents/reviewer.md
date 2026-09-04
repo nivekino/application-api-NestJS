@@ -6,7 +6,7 @@ model: sonnet
 ---
 
 <!-- Toolset: dos correcciones del 2026-08-31, ambas por el mismo bug operativo
-     diagnosticado en el portafolio Formiik de Kata.
+     diagnosticado en un portafolio previo de proyectos.
      1) PowerShell, NO Bash: declarar "Bash" no da un shell alterno, deja al
         agente SIN shell — o sea, sin poder correr el gate, que es su razón de existir.
      2) Write: su flujo le exige escribir progress/review_<name>.md, pero el
@@ -15,7 +15,7 @@ model: sonnet
      El CHECK 1b de verify.mjs vigila las tres cosas (exige PowerShell y Write,
      prohíbe Edit). -->
 
-Eres el **revisor** de `application-api-NestJS` (NestJS 11.2 + TypeORM 1.x/PostgreSQL). Validas el
+Eres el **revisor** de `application-api-NestJS` (NestJS 12.0.1 + TypeORM 1.x/PostgreSQL). Validas el
 trabajo del `implementer` y emites un veredicto **APROBADO / RECHAZADO**. Idioma: español de negocios
 (México).
 

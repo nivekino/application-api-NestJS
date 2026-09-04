@@ -53,17 +53,39 @@ justo donde este proyecto tiene su riesgo:
 **Cómo se ejecuta:**
 
 ```
-npm run test:e2e     # test/app.e2e-spec.ts contra PostgreSQL real; se omite (skip) sin DB_*/JWT_SECRET
+npm run test:e2e:docker                              # B2 en un paso: levanta PostgreSQL 17 desechable (compose.yaml), corre la e2e y lo borra
+npm run test:e2e:docker -- --keep                    # igual, pero deja la base arriba para los casos manuales
+npm run test:e2e                                     # la suite sola, contra el PostgreSQL que indiquen DB_*/JWT_SECRET; se omite (skip) sin ellas
+docker compose --profile app up -d --build --wait    # API (Dockerfile) + PostgreSQL, para B1 y los casos manuales (JWT, Swagger, ValidationPipe, logs, esquema)
+docker compose --profile app down -v                 # apaga y borra todo
 ```
 
 La suite **siembra y borra su propio usuario**, así que es determinista y no depende de datos previos.
-Sin PostgreSQL local, la forma más corta de tener uno de prueba es un contenedor:
+La base de `compose.yaml` vive en **tmpfs** y muere con `down -v`: es desechable por construcción, y
+sus credenciales por omisión son solo para ese contenedor (nunca se apunta a DEV/QA con datos).
 
-```
-docker run -d --name pg-e2e -e POSTGRES_PASSWORD=<solo-local> -e POSTGRES_DB=application_api -p 5432:5432 postgres:17
-```
+**En CI** (`.github/workflows/gate.yml`) corren tres trabajos independientes: `nivel-a` (el gate),
+`nivel-b-e2e` (la suite e2e contra un PostgreSQL 17 efímero del runner: **B2, B3 y B5** automáticos
+desde la feature #5, 2026-09-04) y `docker-smoke` (construye la imagen y levanta API + base con el
+mismo `compose.yaml` que en local, comprobando `GET /api/`, `/api/docs` y el 401 sin token: **B1 y B4**
+automáticos, y la validación del despliegue en contenedor). Los casos que exigen inspeccionar el
+sistema fuera de las respuestas HTTP (logs en disco, esquema de la base) siguen siendo manuales.
 
-⚠️ **Requiere el Node de `.nvmrc` (24 LTS)**: es el mismo piso que el CHECK 2 exige para el Nivel A.
+**Por qué el Nivel B sigue siendo declarado aunque CI corra parte de él:** el 2026-09-04, la primera
+ejecución real del Nivel B (feature #3) encontró **dos defectos que el Nivel A en verde no veía**: la app
+no arranca si `PORT` viene del entorno, y bajo `@nestjs/passport` 12 el `JwtAuthGuard` no resuelve sus
+dependencias en `UsersModule` (un `.overrideGuard` en el spec unitario lo ocultaba). Registrados y
+**cerrados el mismo 2026-09-04 por la feature #5** (`arranque_real_port_y_guard_passport12`): `PORT`
+declara anotación de tipo explícita y `JwtAuthGuard` declara su propio constructor (ver acoplamiento 13
+de [`.claude/agents/planner.md`](../.claude/agents/planner.md)). Es la demostración de que "43/43 en
+verde" mide lo que los mocks dejan medir, no más — y la razón de fondo por la que el Nivel B **no se
+sustituye, se ejecuta**: B1–B7 quedaron corridos y declarados en
+`progress/impl_arranque_real_port_y_guard_passport12.md` §9, con **B3 y B5 ya automatizados** como
+casos permanentes de `test/app.e2e-spec.ts` (antes eran manuales, ahora corren en cada
+`npm run test:e2e:docker`).
+
+⚠️ **Requiere el Node de `.nvmrc` (24 LTS)**: es el mismo piso que el CHECK 2 exige para el Nivel A. La
+imagen del `Dockerfile` fija exactamente esa versión; al mover el piso se cambia ahí también (§6.1).
 
 **Cómo se declara:** en `progress/impl_<name>.md`, sección *Prueba Nivel B* — qué caso, qué comando,
 contra qué base, y el resultado (o el pendiente asignado a una persona). **Sin esa declaración el
@@ -106,7 +128,7 @@ de §3.
 
 ## 3. Por qué el baseline vive en un solo lugar
 
-En un harness hermano de Kata, `feature_list.json` y la documentación decían **9 advertencias**; los
+En un harness hermano, `feature_list.json` y la documentación decían **9 advertencias**; los
 agentes y el slash command seguían diciendo **6**, citando causas ya resueltas. Con ese número
 obsoleto el `leader` se detiene diciendo *"algo nuevo se introdujo"* y el `reviewer` rechaza — **con el
 repo en estado correcto**. El número se había movido 6 → 0 → 9 → 10 conforme se resolvía deuda y
@@ -121,17 +143,25 @@ check nuevo que mueva un número lo actualiza en la misma pasada.
 
 ## 4. Línea base vigente
 
-**Medida el 2026-09-03** corriendo `npm run harness:verify` sobre el repo en estado limpio, tras subir
-el toolchain (Node 24, TypeORM 1.x, ESLint 10), ampliar el gate y cerrar la deuda D1/D2 con la
-feature #2.
+**Medida el 2026-09-04** corriendo `npm run harness:verify` sobre el repo en estado limpio, tras cerrar
+la fase GREEN de la feature #6 (`refactor_buenas_practicas`).
 
 | | |
 |---|---|
 | **Advertencias de deuda** | **0** |
 | **Errores** | 0 |
 | **Advertencias de entorno** (no cuentan) | sin feature activa (según el momento del ciclo) |
-| **Piso de cobertura** (`rules.cobertura_minima`) | líneas **72** · sentencias **73** · funciones **66** · ramas **61** (subido el 2026-09-03 en la fase GREEN de la feature #2, desde 60/60/55/55) |
-| **Cobertura medida** | líneas 75.59 · sentencias 76.37 · funciones 69.69 · ramas 64.49 (2026-09-03, con la batería de la feature #2 en disco) |
+| **Piso de cobertura** (`rules.cobertura_minima`) | líneas **95** · sentencias **94** · funciones **93** · ramas **77** (subido el 2026-09-04 en la fase GREEN de la feature #6, desde 85/85/79/67) |
+| **Cobertura medida** | líneas 99.22 · sentencias 98.95 · funciones 97.82 · ramas 81.59 (2026-09-04, con T1-T21 de la feature #6 en disco: `env.validation.ts`, `winston.config.ts` y `auth.controller.ts` pasan de 0 %/casi 0 % a cubiertos, y se cierran ramas del filtro, del logger y de `UsersService`) |
+
+### Histórico de la línea base
+
+| Fecha | Cobertura medida (líneas/sentencias/funciones/ramas) | Piso resultante | Motivo |
+|---|---|---|---|
+| 2026-09-03 | 75.59 / 76.37 / 69.69 / 64.49 | 72 / 73 / 66 / 61 | Fase GREEN de la feature #2 (cierre D1/D2) |
+| 2026-09-04 | 80.08 / 80.45 / 76.19 / 67.97 | 76 / 76 / 72 / 64 | Fase GREEN de la feature #3 (migración a NestJS 12 + logger propio) |
+| 2026-09-04 | 89.87 / 89.88 / 83.72 / 71.24 | 85 / 85 / 79 / 67 | Fase GREEN de la feature #5 (`PORT` + `JwtAuthGuard` bajo passport 12) |
+| 2026-09-04 | 99.22 / 98.95 / 97.82 / 81.59 | 95 / 94 / 93 / 77 | Fase GREEN de la feature #6 (refactor y buenas prácticas, T1-T21 de caracterización) |
 
 ### Historial de la deuda
 
@@ -188,7 +218,23 @@ verificó con `git status` que no quedaron residuos.
 Los checks 5b (typecheck RED-aware) y 6b (piso de cobertura) quedaron cubiertos indirectamente: en S2
 el spec temporal compiló y el gate saltó la cobertura por estar en `nuevo`; en S7 la evaluó. Pendiente
 de prueba negativa explícita: un spec del contrato que **no compile** (rojo por `tsc`) y una cobertura
-por debajo del piso. Se harán en la primera feature `nuevo` real; anótalo aquí al hacerlo.
+por debajo del piso.
+
+### 5.3. Cerrada el 2026-09-03/04 por la fase RED real de la feature #3 (spec que no compila)
+
+La fase RED de la feature #3 (`red_modo: nuevo`) produjo, sin necesidad de un escenario sintético, el
+caso pendiente de §5.2: `src/common/logger/winston-logger.service.spec.ts` y
+`src/common/logger/logger.module.spec.ts` importaban `./winston-logger.service`, `./logger.module` y
+`./logger.tokens`, que todavía no existían. `npm run harness:verify` corrió con la feature en `red` y:
+
+| Se esperaba | Resultado real |
+|---|---|
+| CHECK 6 marca las dos suites como "no corrió: error de compilación/carga" y las cuenta como el/los fallo(s) esperado(s) del contrato | ✅ `Cannot find module './winston-logger.service'` / `Cannot find module './logger.module'`; el gate las listó como *"fallo(s) esperado(s) dentro de la bateria"* |
+| CHECK 5b (typecheck) tolera el error **solo** por estar en los archivos del `tdd_contract`, sin afectar el resto de `src/`/`test/` | ✅ `[OK] Typecheck sin errores fuera de la fase RED` con `2`/`3` errores tolerados registrados como `[INFO]` |
+| `npm run harness:verify` sigue en `[OK]` (exit 0) pese al rojo, porque el rojo vive donde el contrato lo declara | ✅ |
+
+Queda cerrada la prueba negativa pendiente de §5.2. Sigue pendiente (no forzada todavía en ningún
+ciclo): una cobertura medida por debajo del piso vigente.
 
 ### 5.2. Ejecutada el 2026-08-31 (checks 1b / 3c)
 
@@ -210,40 +256,117 @@ Corrección: todo el gate lee por un único `leerAbs()` que quita el BOM (verifi
 **Lección, la misma de siempre:** *ejecuta la verificación candidata contra el repo real y lee la
 salida antes de dejarla fija.* Un hueco así no se ve leyendo el código del gate; se ve corriéndolo.
 
+### 5.4. El Nivel B encuentra lo que el Nivel A no ve (feature #5, 2026-09-04)
+
+> Un check que nunca falla no protege nada — y un Nivel A en verde tampoco, si nadie corre el Nivel B.
+
+La fase RED de la feature #5 produjo, sola, la evidencia de que el Nivel A (mocks) y el Nivel B
+(PostgreSQL + contenedor real) protegen cosas distintas. La mutación no hizo falta forzarla con un
+guion aparte: **es la propia corrección revertida**.
+
+| Mutación | Archivos que caen en rojo | Lo que prueba |
+|---|---|---|
+| Revertir `src/auth/guards/jwt-auth.guard.ts` a `export class JwtAuthGuard extends AuthGuard('jwt') {}` (sin constructor) | `src/auth/guards/jwt-auth.guard.spec.ts` (T9: `obligatorias` deja de ser `[]`), `src/users/users.module.spec.ts` (T8: `Nest can't resolve dependencies of the JwtAuthGuard`), `src/users/users.controller.spec.ts` (T10, los dos `it()` existentes) | El Nivel A por sí solo ya atrapa B2: el mismo `Nest can't resolve dependencies...` que tumbó el Nivel B real de la feature #3 el 2026-09-04. |
+| Quitar la anotación `: number` de `PORT` en `src/config/env.validation.ts` (dejar `PORT = 3000` a secas) | `src/config/env.validation.spec.ts` (T1: `validateEnv` lanza con `PORT: '3000'`; T2: `design:type` vuelve a `Object`) | El Nivel A por sí solo ya atrapa B1: la app no arrancaría con `PORT` del entorno bajo `compose.yaml`. |
+
+Esta es exactamente la evidencia RED capturada en
+`progress/impl_arranque_real_port_y_guard_passport12.md` §3 (fase RED, `red_modo: nuevo`): los cuatro
+archivos Nivel A del contrato fallaron **antes** de que existiera la corrección, con el mismo mensaje
+de error que produjo el Nivel B real un día antes. La lectura correcta no es "ya no hace falta correr
+el Nivel B" — es la contraria: **el Nivel A que hoy atrapa B1/B2 no existía cuando el Nivel B los
+encontró**. La feature #5 demuestra el ciclo completo: Nivel B descubre → se escribe la prueba de
+Nivel A que lo habría atrapado → **se ejecuta el Nivel B de nuevo** para confirmar que la corrección
+funciona contra PostgreSQL y el contenedor reales, no solo contra el mock (B1–B7 ejecutados y
+declarados en `progress/impl_arranque_real_port_y_guard_passport12.md` §9). Un Nivel A robusto no
+vuelve opcional al Nivel B: reduce cuántas veces el Nivel B tiene que ser quien encuentre el defecto
+por primera vez.
+
 ---
 
 ## 6. Toolchain: piso, techos y pendientes de entorno
 
-Medido el **2026-09-03**. No es deuda de código: son decisiones de plataforma con su fecha de revisión.
+Medido el **2026-09-03**, actualizado el **2026-09-04** (feature #3, migración a NestJS 12). No es
+deuda de código: son decisiones de plataforma con su fecha de revisión.
 
-1. **Node 24 LTS es el piso** (`engines >=24.11.0`, `.nvmrc` 24.20.0, `.npmrc` con `engine-strict`
-   para que `npm ci` se niegue a instalar con otro Node). Fue advertencia; ahora el CHECK 2 lo trata
-   como error porque TypeORM 1.x (`>=24.11.0` en la línea 24) y ESLint 10 (`>=24`) ya no soportan
-   menos. **Node 26 entra a Active LTS el 2026-10-28** (Node 24 pasa a Maintenance el 2026-10-20): subir
-   el piso es cambiar `.nvmrc`, `engines`, `NODE_MIN` en `verify.mjs` y esta sección en la misma pasada.
+1. **Node 24 LTS es el piso, `engines` en `>=24.15.0`** (subido desde `>=24.11.0` el 2026-09-04;
+   `.nvmrc` sigue en `24.20.0`, `.npmrc` con `engine-strict` para que `npm ci` se niegue a instalar con
+   otro Node). El CHECK 2 lo trata como error (no advertencia) porque TypeORM 1.x y ESLint 10 ya no
+   soportan menos de la línea 24. Nota de medición: el `package.json` de `@nestjs/cli@12.0.0` declara
+   `engines.node: ">= 20.11"` (más laxo de lo esperado); el piso `>=24.15.0` es una decisión de
+   plataforma propia (Q1 del diseño de la feature #3), no una exigencia dura del CLI. **Node 26 entra a
+   Active LTS el 2026-10-28** (Node 24 pasa a Maintenance el 2026-10-20): subir el piso es cambiar
+   `.nvmrc`, `engines`, `NODE_MIN` en `verify.mjs` y esta sección en la misma pasada.
 2. **TypeScript 6.0.x es el techo, fijado con `~6.0.3`.** TypeScript 7.0.2 (compilador nativo) está
    publicado desde el 2026-07-08, pero **typescript-eslint 8.69.0 declara `typescript <6.1.0`** y
    **ts-jest 29.4.12 declara `<7`**. Subir rompería el linter y las pruebas a la vez. Revisar cuando
    ambos publiquen soporte. Por lo mismo, `lib` se queda en `ES2024` sin las entradas `ESNext.*` de la
    base oficial de Node 24: typescript-eslint no conoce `es2025.iterator`.
-3. **NestJS 11.2 y no 12.** NestJS 12.0.1 (2026-08-27) distribuye todos los `@nestjs/*` **solo como
-   ESM**. Bloqueos medidos: `nest-winston` 1.10.2 declara peer `@nestjs/common ^5..^11` y no tiene
-   soporte v12 (gremo/nest-winston#935, abierto el 2026-09-01); Jest solo soporta `require()` de ESM en
-   Node ≥ 24.9 (Jest 30.4+); el CLI 12 exige Node ≥ 24.15 para `nest new/generate/upgrade`. Es la
-   **feature #3** del backlog, con diseño previo (D9).
+3. **NestJS 12.0.1 (feature #3, cerrada el 2026-09-04).** NestJS 12 distribuye todos los `@nestjs/*`
+   **solo como ESM**; el repositorio sigue siendo **CommonJS** y los consume con el `require(esm)`
+   nativo de Node. Hallazgos de la migración:
+   - `nest-winston` 1.10.2 (peer `@nestjs/common ^5..^11`, sin soporte v12) se **reemplazó** por
+     `WinstonLoggerService` propio en `src/common/logger/` (mismos transports/rotación de
+     `winston.config.ts`, sin cambios).
+   - **`npm i` de los `@nestjs/*` 12 no se pudo hacer en dos comandos separados** (uno para
+     `dependencies`, otro para `devDependencies`) como proponía el diseño original: mientras
+     `@nestjs/testing`/`@nestjs/cli`/`@nestjs/schematics` seguían en 11 en `package.json`, su peer sobre
+     `@nestjs/core`/`@nestjs/common` producía `ERESOLVE` real (no cosmético) en cualquier orden. Se
+     resolvió con **un solo `npm i`** de los once paquetes a la vez (sin `--legacy-peer-deps` ni
+     `--force`), y luego se corrigió a mano qué sección de `package.json` (`dependencies` vs.
+     `devDependencies`) le correspondía a cada paquete, seguido de `npm install` (sin argumentos) para
+     resincronizar el lockfile. `npm ls @nestjs/common` confirma una sola copia 12.0.1 deduplicada en
+     todo el árbol.
+   - **P1 confirmado a favor:** `nest build` (CLI 12.0.0) corre sin problema en Node 24.20.0 y deja
+     `dist/main.js` en la raíz de `dist/`. No hizo falta el plan B (`tsc -p tsconfig.build.json`).
+   - **P2 confirmado a favor:** `@nestjs/config` 12.0.0 sigue aceptando `validate: (config) => …` como
+     función simple (`ConfigModuleOptions.validate` en sus `.d.ts`); no hizo falta Standard Schema ni
+     agregar Zod/Valibot. `src/config/env.validation.ts` no cambió.
+   - **P3 confirmado:** una sola copia de TypeScript, `6.0.3`, deduplicada (`npm ls typescript`).
+     `@nestjs/cli@12.0.0` declara su propio `typescript: ~6.0.2`, compatible con la raíz sin necesidad
+     del `overrides`; se **conserva** de todas formas porque sigue siendo inocuo (fuerza exactamente la
+     versión que ya se resolvería por deduplicación) — ver punto 5.
+   - **Hallazgo nuevo, no anticipado en el diseño:** Jest 30.5.1 solo puede `require()` los `@nestjs/*`
+     (ESM puro) si Node expone `vm.SourceTextModule`, y esa API vive detrás de la bandera
+     `--experimental-vm-modules` — Node no la habilita por defecto ni en 24.20.0. Sin ella, cualquier
+     suite que importe `@nestjs/testing` o `@nestjs/common` falla con
+     `Must use import to load ES Module` / `ERR_REQUIRE_ESM` aunque el runtime "soporte" `require(esm)`
+     en el sentido de C6 del diseño. Los scripts `test`, `test:watch`, `test:cov`, `test:debug` y
+     `test:e2e` de `package.json`, y el `CHECK 6` de `verify.mjs`, invocan
+     `node --experimental-vm-modules node_modules/jest/bin/jest.js …` en vez de `jest`/`npx jest` a
+     secas (mismo patrón que ya usaba `test:debug` para sus propias flags de Node).
+   - `users.controller.spec.ts` (feature #1) necesitó `.overrideGuard(JwtAuthGuard).useValue({
+     canActivate: () => true })`: a partir de NestJS 12, `Test.createTestingModule().compile()`
+     instancia también los guards declarados con `@UseGuards()` a nivel de clase (antes se resolvían de
+     forma perezosa solo al ejecutar una petición HTTP real), y `JwtAuthGuard` (`AuthGuard('jwt')` de
+     Passport) exige `AuthModuleOptions`, que ese spec no registra a propósito (no ejercita el guard;
+     eso lo cubre `users.controller.guard.spec.ts` por metadato).
+     > ⚠️ **Nota del 2026-09-04 (feature #5):** el diagnóstico de arriba (*"a partir de NestJS 12,
+     > `compile()` instancia también los guards"*) **no es la causa raíz**; `createInstancesOfInjectables`
+     > no es nueva en NestJS 12. La causa real es una asimetría de lectura de metadatos en el injector
+     > (`Reflect.getMetadata` vs. `Reflect.getOwnMetadata`, acoplamiento 13 de
+     > [`.claude/agents/planner.md`](../.claude/agents/planner.md)): `JwtAuthGuard` hereda el
+     > `design:paramtypes` del mixin `AuthGuard('jwt')` pero no hereda su `optional:paramtypes`, así que
+     > una dependencia opcional del padre se vuelve obligatoria en la subclase. El `.overrideGuard` que
+     > este párrafo describe ya **no existe** en `users.controller.spec.ts`: la feature #5 lo retiró al
+     > corregir `JwtAuthGuard` con un constructor propio (`jwt-auth.guard.ts`), sin necesitar Passport
+     > registrado en `UsersModule`. Ver el análisis completo en
+     > `progress/design_arranque_real_port_y_guard_passport12.md` §3 y
+     > `progress/impl_migracion_nestjs_12_esm.md` §11.7 (corregido con la misma nota).
 4. **Sin carpeta de migraciones.** `synchronize` está apagado en producción, así que hoy ningún cambio
    de esquema tiene camino a producción. Cualquier feature que dispare **D4** debe resolverlo en su
    diseño.
-5. **`@nestjs/cli` 11 compila con el TypeScript raíz** gracias a `overrides` en `package.json`. Sin el
-   override npm instalaba una copia anidada 5.9.3 y `nest build` compilaba con una versión distinta a la
-   de ts-jest y del editor.
+5. **`@nestjs/cli` 12 compila con el TypeScript raíz** gracias a `overrides` en `package.json`. Aunque
+   `@nestjs/cli@12.0.0` ya declara su propio `typescript: ~6.0.2` (compatible con la raíz `~6.0.3` sin
+   el override), se conserva para no depender de que la deduplicación de npm siga eligiendo la copia
+   correcta en instalaciones futuras.
 6. **Lockfile:** el `package-lock.json` anterior era inconsistente (`ts-jest@29.4.6` exige
    `typescript <6` junto a `typescript ^6.0.3`) y **un clon limpio no podía `npm ci`**. Se regeneró desde
-   cero el 2026-09-03. CI corre `npm ci`, así que volvería a detectarse.
+   cero el 2026-09-03 y de nuevo el 2026-09-04 al migrar a NestJS 12. CI corre `npm ci`, así que
+   cualquier inconsistencia volvería a detectarse.
 7. **Finales de línea:** el árbol de trabajo estaba en CRLF (`core.autocrlf=true`) con el índice en LF, y
    `.editorconfig` tenía `max_line_length = off`, que Prettier lee como ancho **infinito**. Ahora
    `.gitattributes` fuerza LF en checkout y `.prettierrc` fija `printWidth` 100 + `endOfLine` lf.
-8. **Nivel B pendiente de ejecutar por una persona** tras esta actualización: TypeORM 1.x se validó
-   con la batería unitaria (mocks) y el build; el comportamiento real contra PostgreSQL (esquema con
-   `synchronize`, `bigint` como string, e2e con semilla) no se corrió porque la máquina no tenía
-   PostgreSQL ni el daemon de Docker activo. Comando y contenedor en §1.
+8. **Nivel B de la feature #3** (invalidación de JWT end-to-end, `ValidationPipe`, Swagger, esquema sin
+   cambios, logger sin datos sensibles en disco): declarado en
+   `progress/impl_migracion_nestjs_12_esm.md`. Ver el resultado ahí — no se repite el número aquí para
+   no desincronizar dos documentos.

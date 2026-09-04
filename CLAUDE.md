@@ -5,10 +5,12 @@ Guía de operación para Claude Code en este repositorio. Idioma de trabajo: **e
 contraseñas, secretos ni cadenas de conexión en logs, respuestas de API ni documentación. Todo el
 trabajo es local; no envíes datos a servicios externos.
 
-**Stack vigente (2026-09-03):** Node **24 LTS** (`.nvmrc`), TypeScript **6.0.x**, NestJS **11.2**,
+**Stack vigente (2026-09-04):** Node **24 LTS** (`.nvmrc`), TypeScript **6.0.x**, NestJS **12.0.1**,
 TypeORM **1.x**, PostgreSQL, Jest 30 + ts-jest, ESLint 10 + typescript-eslint 8 (`strictTypeChecked`),
-Prettier 3 (`printWidth` 100, LF). Las versiones exactas viven en `package.json`; las razones de los
-techos (TS 7, NestJS 12) en `docs/verifications.md` §6.
+Prettier 3 (`printWidth` 100, LF). Las versiones exactas viven en `package.json`; las razones del techo
+de TS 7 en `docs/verifications.md` §6. NestJS 12 publica todos los `@nestjs/*` como ESM puro; el
+repositorio sigue siendo **CommonJS** y los consume con el `require(esm)` nativo de Node (Jest arranca
+con `--experimental-vm-modules`, ver `docs/verifications.md` §6).
 
 ## Patrón de trabajo: Leader → Planner → Implementer (TDD) → Reviewer
 
@@ -102,10 +104,20 @@ cualquier rojo es error. Así el gate puede dar `[OK]` durante todo el ciclo sin
   `expect` sobre el resultado en cada `it()`, sin `expect` condicionales. Lo vigila el linter.
 - **Imports de tipos:** no conviertas a `import type` clases que NestJS inyecta o valida en runtime
   (`emitDecoratorMetadata`). Ver la nota de `tsconfig.json`.
+- **Idioma de los identificadores:** orientados al framework y al contrato público en **inglés**
+  (rutas, llaves de DTO, nombres de columna, clases, métodos públicos); comentarios, mensajes de
+  negocio, textos de `it()` y helpers privados en **español de negocios (México)**. No es una mezcla
+  accidental: es la convención del repo (p. ej. `escribir`, `normalizarMensaje`, `construirHost` son
+  helpers privados a propósito en español).
+- **Parámetro del usuario autenticado:** `@CurrentUser()` (`src/auth/decorators/current-user.decorator.ts`,
+  `createParamDecorator`) en vez de `@Request() req: { user: User }`: el controller no conoce la forma
+  del `Request` de Express. Requiere `JwtAuthGuard` (o cualquier guard que puebla `req.user`) antes en
+  la cadena.
 
-> Los **acoplamientos ocultos** del proyecto (los doce modos de falla silenciosa: `synchronize` sin
+> Los **acoplamientos ocultos** del proyecto (los trece modos de falla silenciosa: `synchronize` sin
 > migraciones, doble envoltura, `required` del ValidationPipe, logs que quedan en disco, criterios
-> vacíos en TypeORM 1.x…) están en [`.claude/agents/planner.md`](.claude/agents/planner.md). Léelos
+> vacíos en TypeORM 1.x, metadatos heredados de un mixin en guards de clase…) están en
+> [`.claude/agents/planner.md`](.claude/agents/planner.md). Léelos
 > antes de implementar, aunque la feature no haya pasado por diseño.
 
 ## Reglas de negocio críticas (no romper)
@@ -123,13 +135,21 @@ cualquier rojo es error. Así el gate puede dar `[OK]` durante todo el ciclo sin
 - `npm run harness:estructura` — sólo estructura, rápido y sin `node_modules`. **No cierra una
   feature:** el Nivel A queda incompleto.
 - `npm run test:e2e` — **Nivel B**, contra PostgreSQL real (se omite sin variables `DB_*`).
-- **Node 24 LTS es el piso** (`engines` + `.npmrc` con `engine-strict`; lo verifica el CHECK 2 como
-  error, no como advertencia). Node 26 entra a LTS el 2026-10-28: el piso se mueve actualizando
+  `npm run test:e2e:docker` la corre en un paso contra el PostgreSQL desechable de `compose.yaml`;
+  `docker compose --profile app up -d --build --wait` levanta además la API (`Dockerfile`) para los
+  casos manuales. CI corre gate + e2e + smoke de la imagen (`.github/workflows/gate.yml`).
+- **Node 24 LTS es el piso** (`engines >=24.15.0` + `.npmrc` con `engine-strict`; lo verifica el CHECK 2
+  como error, no como advertencia). Node 26 entra a LTS el 2026-10-28: el piso se mueve actualizando
   `.nvmrc`, `engines` y el CHECK 2 en la misma pasada.
 - **TypeScript 6.0.x** (`~6.0.3`) con `target`/`lib` en `ES2024`. El techo lo ponen typescript-eslint
   (`<6.1.0`) y ts-jest (`<7`), no el compilador. Condiciones para subir: `docs/verifications.md` §6.
-- **NestJS 11.2**, no 12: NestJS 12 es ESM puro y `nest-winston` no lo soporta; la migración es la
-  feature #3 del backlog (`needs_design: true`, D9).
+- **NestJS 12.0.1, todos los `@nestjs/*` como ESM puro.** El repositorio permanece **CommonJS**
+  (`module: nodenext` con emisión CommonJS, `experimentalDecorators` + `emitDecoratorMetadata` intactos)
+  y consume esos paquetes vía `require(esm)` de Node. `nest-winston` no soporta NestJS 12: el logger es
+  un `WinstonLoggerService` propio en `src/common/logger/` (feature #3). Jest necesita
+  `--experimental-vm-modules` para poder hacer `require(esm)` de `@nestjs/*` bajo `jest-runtime`; los
+  scripts `test*` invocan `node --experimental-vm-modules node_modules/jest/bin/jest.js` en vez de
+  `jest` a secas.
 - Detalle de cada check, baseline vigente, piso de cobertura y bitácora de pruebas negativas:
   **`docs/verifications.md`**.
 - Hooks (`.claude/settings.json`): `eslint --fix` del archivo editado en `PostToolUse` (`.ts` de
@@ -151,7 +171,7 @@ La migración Express→NestJS ya está completa (`docs/checkpoints/` CP-00…CP
 documentos quedan como **referencia histórica** y no describen el flujo vigente: para toda feature
 nueva el ciclo es `planner` + `implementer` + `reviewer`.
 
-El harness se actualizó el **2026-08-31** adoptando las lecciones del portafolio Formiik de Kata (gate
+El harness se actualizó el **2026-08-31** adoptando las lecciones de un portafolio previo de proyectos (gate
 de dos niveles, CHECK 1b de toolsets, fase de diseño por bandera, baseline en un solo documento,
 prueba negativa obligatoria) y la trazabilidad requisito↔test del patrón SDD, reemplazando el SDD por
 **TDD**: aquí el artefacto que se aprueba antes de codificar es **la batería de tests en rojo**, no un

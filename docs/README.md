@@ -1,7 +1,7 @@
 # Documentación de migración Express → NestJS
 
 Migración de la API **`application-api`** (Node.js/Express 5, DDD, MongoDB) hacia este proyecto
-**`application-api-NestJS`** (NestJS 11, hoy 11.2 con TypeORM 1.x) usando **PostgreSQL + TypeORM**.
+**`application-api-NestJS`** (NestJS 12, hoy 12.0.1 con TypeORM 1.x) usando **PostgreSQL + TypeORM**.
 
 ## Índice
 
@@ -39,4 +39,4 @@ Para features nuevas el ciclo es el TDD del harness (`/feature`, `/design`), des
 - **Validación:** `ValidationPipe` global (class-validator/class-transformer ya eran compatibles).
 - **Documentación API:** Swagger/OpenAPI en `/api/docs`.
 - **Reglas de negocio preservadas:** invalidación de JWT (`iat < lastTokenIssuedAt`), token a 8h, bcrypt salt 10.
-- **Seguridad (Kata):** nunca registrar contraseñas, `JWT_SECRET` ni cadenas de conexión.
+- **Seguridad de datos:** nunca registrar contraseñas, `JWT_SECRET` ni cadenas de conexión.
