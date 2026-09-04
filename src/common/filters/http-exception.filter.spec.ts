@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpException,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,7 +15,7 @@ type LoggerMock = jest.Mocked<Pick<LoggerService, 'log' | 'error' | 'warn'>>;
  * feature #1): documenta la forma del error que hoy produce el
  * `HttpExceptionFilter` global y lo que registra en el logger.
  *
- * Seguridad Kata: uno de los escenarios incluye una contraseña en el cuerpo de
+ * Seguridad de datos: uno de los escenarios incluye una contraseña en el cuerpo de
  * la peticion para comprobar que el logger NUNCA la registra (solo metodo,
  * ruta, status y mensaje).
  */
@@ -138,6 +139,37 @@ describe('HttpExceptionFilter', () => {
     });
     expect(logger.error).toHaveBeenCalledWith(
       'GET /api/users -> 500: Saldo no disponible en el core bancario',
+    );
+  });
+
+  /**
+   * Batería de la feature #6 (`refactor_buenas_practicas`, `red_modo: caracterizacion`):
+   * las dos ramas siguientes no tenían prueba directa y son condición previa de R5
+   * (extraer un helper privado con narrowing explícito, sin aserciones de tipo).
+   */
+  it('HttpExceptionFilter usa como message el texto de una HttpException construida con un string', () => {
+    const host = construirHost({ method: 'GET', url: '/api/estado' });
+
+    filter.catch(new HttpException('texto plano', 418), host);
+
+    expect(status).toHaveBeenCalledWith(418);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 418,
+      message: 'texto plano',
+      resource: undefined,
+      isError: true,
+    });
+  });
+
+  it('HttpExceptionFilter recurre a exception.message cuando el cuerpo de la HttpException no trae un message de tipo string', () => {
+    const host = construirHost({ method: 'GET', url: '/api/estado' });
+    const exception = new HttpException({ error: 'algo' }, 418);
+
+    filter.catch(exception, host);
+
+    expect(status).toHaveBeenCalledWith(418);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ statusCode: 418, message: exception.message }),
     );
   });
 });

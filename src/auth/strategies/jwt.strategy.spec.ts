@@ -4,7 +4,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { UsersService } from '../../users/users.service';
 import { User } from '../../users/entities/user.entity';
 import { UserRole } from '../../users/enums/user-role.enum';
-import { JwtPayload } from '../auth.service';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 type UsersServiceMock = jest.Mocked<Pick<UsersService, 'findById'>>;
 

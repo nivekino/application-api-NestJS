@@ -1,14 +1,8 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-export interface ApiResponse<T = unknown> {
-  statusCode: number;
-  message: string;
-  resource?: T;
-  isError: boolean;
-}
+import { ApiResponse } from '../interfaces/api-response.interface';
 
 /**
  * Envuelve las respuestas exitosas en el formato estandarizado

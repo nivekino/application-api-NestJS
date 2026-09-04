@@ -136,4 +136,57 @@ describe('UsersService', () => {
       expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'uuid-inexistente' } });
     });
   });
+
+  /**
+   * Batería de la feature #6 (`refactor_buenas_practicas`, `red_modo: caracterizacion`):
+   * `findByUsername` y `updateLastTokenIssuedAt` no tenían prueba directa (solo se
+   * ejercitaban indirectamente vía `AuthService`). Fijan comportamiento hoy existente
+   * antes del refactor R10 (constante del `select` público + `toListItemDto`).
+   */
+  it('findByUsername consulta por la columna username y devuelve la entidad completa, porque el login necesita el hash', async () => {
+    const persisted = buildUser();
+    repo.findOne.mockResolvedValue(persisted);
+
+    const result = await service.findByUsername('jdoe');
+
+    expect(repo.findOne).toHaveBeenCalledWith({ where: { username: 'jdoe' } });
+    expect(result).toEqual(persisted);
+  });
+
+  it('findById devuelve la entidad completa, incluido lastTokenIssuedAt, que la regla de invalidacion de JWT necesita', async () => {
+    const persisted = buildUser({ lastTokenIssuedAt: 2000 });
+    repo.findOne.mockResolvedValue(persisted);
+
+    const result = await service.findById('uuid-1');
+
+    expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
+    expect(result?.lastTokenIssuedAt).toBe(2000);
+  });
+
+  it('updateLastTokenIssuedAt actualiza solo esa columna usando el id del usuario como criterio no vacio', async () => {
+    repo.update.mockResolvedValue({ affected: 1, raw: [], generatedMaps: [] });
+
+    await service.updateLastTokenIssuedAt('uuid-1', 12345);
+
+    expect(repo.update).toHaveBeenCalledWith('uuid-1', { lastTokenIssuedAt: 12345 });
+  });
+
+  it('create marca isActive en true cuando el DTO no trae el campo active', async () => {
+    const dto: CreateUserDto = {
+      username: 'jdoe',
+      name: 'Juan Doe',
+      email: 'juan@example.com',
+      password: 'secret123',
+      role: UserRole.USER,
+    };
+
+    passwordService.hash.mockResolvedValue('hashed-pw');
+    const persisted = buildUser();
+    repo.create.mockReturnValue(persisted);
+    repo.save.mockResolvedValue(persisted);
+
+    await service.create(dto);
+
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ isActive: true }));
+  });
 });
