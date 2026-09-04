@@ -146,11 +146,11 @@ permanece** en `rules.tdd_exentas_legacy`: su batería original no tiene evidenc
 no puede producirse retroactivamente; fabricarla sería peor que declararla ausente. La exención ya no
 tiene deuda asociada.
 
-### Hallazgos abiertos que NO son advertencias del gate
+### Hallazgos registrados fuera del baseline (no son advertencias del gate)
 
 | Origen | Hallazgo | Dónde vive |
 |---|---|---|
-| Reviewer de la feature #2 (2026-09-03) | Con una excepción no controlada que es instancia de `Error`, `HttpExceptionFilter` devuelve al cliente el `message` interno en el 500 (posible fuga de detalle interno, D6). La caracterización lo documentó sin corregirlo, porque ese modo prohíbe tocar producción. | **Feature #4 `error_500_sin_detalle_interno`** (`needs_design: true`, D5/D6) en `feature_list.json`. Se cierra por el ciclo normal, no como advertencia del baseline. |
+| Reviewer de la feature #2 (2026-09-03) | Con una excepción no controlada que es instancia de `Error`, `HttpExceptionFilter` devolvía al cliente el `message` interno en el 500 (fuga de detalle interno, D6). La caracterización lo documentó sin corregirlo, porque ese modo prohíbe tocar producción. | **Cerrado el 2026-09-03 por la feature #4 `error_500_sin_detalle_interno`** (diseño D5/D6, ciclo TDD completo): al cliente le llega siempre el literal genérico y el mensaje real va solo al log. |
 
 ### Cuando el conteo se mueve
 

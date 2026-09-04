@@ -24,7 +24,10 @@ interface ErrorBody {
  *
  * Seguridad Kata: solo se registran método, ruta, status y mensaje. NUNCA se
  * loguea el cuerpo de la petición (puede contener contraseñas), cabeceras
- * (Authorization), JWT_SECRET ni cadenas de conexión.
+ * (Authorization), JWT_SECRET ni cadenas de conexión. El mensaje interno de
+ * una excepción no controlada (p. ej. un error del driver de PostgreSQL) va
+ * únicamente al log (diagnóstico, queda en disco); al cliente se le devuelve
+ * siempre el literal genérico.
  */
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -41,6 +44,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let statusCode: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let resource: unknown;
+    let mensajeInterno = message;
 
     if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
@@ -56,8 +60,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
           resource = { errors: obj.message };
         }
       }
+      mensajeInterno = message;
     } else if (exception instanceof Error) {
-      message = exception.message;
+      // El message real del Error (p. ej. detalle del driver de PostgreSQL)
+      // NUNCA sale por la respuesta: solo se registra en el log.
+      mensajeInterno = exception.message;
     }
 
     const body: ErrorBody = {
@@ -67,7 +74,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       isError: true,
     };
 
-    this.logger.error(`${request.method} ${request.url} -> ${statusCode}: ${message}`);
+    this.logger.error(`${request.method} ${request.url} -> ${statusCode}: ${mensajeInterno}`);
 
     response.status(statusCode).json(body);
   }

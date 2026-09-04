@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import type { ArgumentsHost, LoggerService } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { HttpExceptionFilter } from './http-exception.filter';
@@ -86,5 +90,54 @@ describe('HttpExceptionFilter', () => {
     });
     expect(logger.error).toHaveBeenCalledWith('POST /api/users -> 500: Internal server error');
     expect(logger.error).not.toHaveBeenCalledWith(expect.stringContaining('Sup3rSecreta!'));
+  });
+
+  /**
+   * Feature #4 (deuda D6 detectada por el reviewer de la feature #2): un
+   * `Error` no controlado (p. ej. un fallo del driver de PostgreSQL) no debe
+   * exponer su `message` real al consumidor externo, solo al logger.
+   */
+  it('HttpExceptionFilter no expone el message interno de un Error no controlado: responde 500 con "Internal server error" y sin resource', () => {
+    const host = construirHost({ method: 'POST', url: '/api/users' });
+
+    filter.catch(new Error('relation "users" does not exist en 10.0.0.7:5432'), host);
+
+    expect(status).toHaveBeenCalledWith(500);
+    const [cuerpoEnviadoAlCliente] = json.mock.calls[0] as [unknown];
+    expect(JSON.parse(JSON.stringify(cuerpoEnviadoAlCliente)) as unknown).toEqual({
+      statusCode: 500,
+      message: 'Internal server error',
+      isError: true,
+    });
+    expect(JSON.stringify(cuerpoEnviadoAlCliente)).not.toContain('relation "users" does not exist');
+  });
+
+  it('HttpExceptionFilter registra en el logger el message real del Error no controlado, sin el cuerpo de la petición', () => {
+    const cuerpoSensible = { username: 'jdoe', password: 'Sup3rSecreta!' };
+    const host = construirHost({ method: 'POST', url: '/api/users', body: cuerpoSensible });
+
+    filter.catch(new Error('relation "users" does not exist en 10.0.0.7:5432'), host);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'POST /api/users -> 500: relation "users" does not exist en 10.0.0.7:5432',
+    );
+    expect(logger.error).not.toHaveBeenCalledWith(expect.stringContaining('Sup3rSecreta!'));
+  });
+
+  it('HttpExceptionFilter conserva el message de una HttpException lanzada a propósito, incluso cuando su status es 500', () => {
+    const host = construirHost({ method: 'GET', url: '/api/users' });
+
+    filter.catch(new InternalServerErrorException('Saldo no disponible en el core bancario'), host);
+
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: 500,
+      message: 'Saldo no disponible en el core bancario',
+      resource: undefined,
+      isError: true,
+    });
+    expect(logger.error).toHaveBeenCalledWith(
+      'GET /api/users -> 500: Saldo no disponible en el core bancario',
+    );
   });
 });

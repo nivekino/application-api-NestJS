@@ -162,8 +162,33 @@
       "needs_design_motivo": "D5 - toca src/common/filters/http-exception.filter.ts, filtro global que aplica a todos los endpoints. D6 - cambia que dato sale por la respuesta de API y cual queda solo en el log.",
       "tdd": true,
       "red_modo": "nuevo",
-      "tdd_contract": [],
-      "status": "pending"
+      "tdd_contract": [
+        {
+          "criterio": 1,
+          "nivel": "A",
+          "test": "HttpExceptionFilter no expone el message interno de un Error no controlado: responde 500 con \"Internal server error\" y sin resource",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        },
+        {
+          "criterio": 2,
+          "nivel": "A",
+          "test": "HttpExceptionFilter registra en el logger el message real del Error no controlado, sin el cuerpo de la petición",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        },
+        {
+          "criterio": 3,
+          "nivel": "A",
+          "test": "HttpExceptionFilter conserva el message de una HttpException lanzada a propósito, incluso cuando su status es 500",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        },
+        {
+          "criterio": 4,
+          "nivel": "A",
+          "test": "HttpExceptionFilter serializa una HttpException como { statusCode, message, isError: true }",
+          "archivo": "src/common/filters/http-exception.filter.spec.ts"
+        }
+      ],
+      "status": "done"
     }
   ]
 }

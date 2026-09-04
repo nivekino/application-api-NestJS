@@ -39,3 +39,10 @@ borra lo anterior.
 - **Decisión registrada:** la exención legacy de la feature #1 permanece (sin evidencia RED retroactiva posible) pero ya sin deuda; el baseline queda en 0.
 - **Nivel B:** declarado, pendiente de ejecutar por el usuario (sin PostgreSQL en la máquina de la sesión).
 - **Veredicto:** progress/review_pruebas_guard_401_y_formato_respuesta.md · **Detalle impl:** progress/impl_pruebas_guard_401_y_formato_respuesta.md
+
+## [2026-09-03] #4 error_500_sin_detalle_interno — HttpExceptionFilter no expone el mensaje interno de un Error no controlado
+- **Resultado verificación:** `npm run harness:verify` → [OK]; 26/26 tests; lint 0/0; cobertura sobre el piso 72/73/66/61; `[BASELINE] 0 == 0`.
+- **Ciclo:** planner (D5/D6) → RED (`red_modo: nuevo`, 3 `it()` nuevos en `http-exception.filter.spec.ts`, 1 en rojo por aserción) → puerta humana (aprobada por el usuario) → GREEN (único archivo de producción: `src/common/filters/http-exception.filter.ts`; el `message` real de un `Error` va solo al log, la respuesta lleva `'Internal server error'`) → reviewer **APROBADO**.
+- **Origen:** hallazgo §5.2 del reviewer de la feature #2. Cerrado en `docs/verifications.md` §4.
+- **Nivel B:** declarado (provocar un 500 real con la app arriba y comparar respuesta vs. `logs/error-*.log`), pendiente de ejecutar por el usuario.
+- **Veredicto:** progress/review_error_500_sin_detalle_interno.md · **Detalle impl:** progress/impl_error_500_sin_detalle_interno.md · **Diseño:** progress/design_error_500_sin_detalle_interno.md
