@@ -7,6 +7,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UserDto } from './dto/user.dto';
 import { UserListItemDto } from './dto/user-list-item.dto';
 
+// TypeORM 1.x: `select` es un objeto tipado por columna (string[] ya no
+// compila). Una sola constante para la lista de columnas públicas: `list()`
+// la usa como criterio de la consulta y `toListItemDto` la usa como forma del
+// mapeo, así que ambas listas no pueden desincronizarse entre sí.
+const SELECT_PUBLICO = { username: true, name: true, role: true, isActive: true } as const;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -33,19 +39,10 @@ export class UsersService {
   }
 
   async list(): Promise<UserListItemDto[]> {
-    const users = await this.userRepository.find({
-      select: ['username', 'name', 'role', 'isActive'],
-    });
+    const users = await this.userRepository.find({ select: SELECT_PUBLICO });
 
-    return users.map((u) => ({
-      username: u.username,
-      name: u.name,
-      role: u.role,
-      isActive: u.isActive,
-    }));
+    return users.map((u) => this.toListItemDto(u));
   }
-
-  // ---- Perfil del usuario autenticado ----
 
   async getProfile(id: string): Promise<UserDto> {
     const user = await this.findById(id);
@@ -54,8 +51,6 @@ export class UsersService {
     }
     return this.toDto(user);
   }
-
-  // ---- Métodos de apoyo para Auth (CP-04) ----
 
   async findByUsername(username: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { username } });
@@ -81,6 +76,15 @@ export class UsersService {
       isActive: u.isActive,
       createdAt: u.createdAt,
       updatedAt: u.updatedAt,
+    };
+  }
+
+  private toListItemDto(u: User): UserListItemDto {
+    return {
+      username: u.username,
+      name: u.name,
+      role: u.role,
+      isActive: u.isActive,
     };
   }
 }

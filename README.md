@@ -1,98 +1,88 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# application-api-NestJS
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API de **aprendizaje personal** para flujos de crédito y cobranza, migrada
+desde Express hacia **NestJS 12 + TypeORM 1.x + PostgreSQL**. Los datos de clientes son sensibles: nada
+de contraseñas, secretos ni cadenas de conexión en logs, respuestas ni documentación.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+El repositorio sigue siendo **CommonJS** (`module: nodenext` con emisión CommonJS): NestJS 12 publica
+todos los `@nestjs/*` como ESM puro, y esta app los consume con el `require(esm)` nativo de Node 24,
+con Jest arrancado con `--experimental-vm-modules` (ver `docs/verifications.md` §6).
 
-## Description
+El repositorio se opera con un **harness de ingeniería** (estado en disco + verificación ejecutable +
+roles con autoridad separada) en ciclo **TDD estricto**. Antes de tocar código lee
+[CLAUDE.md](CLAUDE.md) (rol y convenciones) y [AGENTS.MD](AGENTS.MD) (qué leer y cuándo).
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requisitos
 
-## Project setup
+| Herramienta | Versión | Dónde se fija |
+|---|---|---|
+| Node.js | **24 LTS** (`.nvmrc`: 24.20.0). Piso `>=24.15.0` | `engines` en `package.json`, `.nvmrc`, `.npmrc` (`engine-strict`) |
+| npm | `>=10` | `engines` |
+| TypeScript | `~6.0.3` (techo del toolchain, ver `docs/verifications.md` §6) | `package.json` |
+| PostgreSQL | cualquier versión soportada por `pg` 8.x | `.env` (ver `.env.example`) |
 
-```bash
-$ npm install
-```
+Node 26 entra a LTS el 2026-10-28; el piso del repo se mueve actualizando `.nvmrc`, `engines` y el
+CHECK 2 del gate en la misma pasada.
 
-## Compile and run the project
+## Puesta en marcha
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm ci                      # instala exactamente el lockfile (falla si Node no cumple engines)
+cp .env.example .env        # completa DB_* y JWT_SECRET; NUNCA subas el .env
+npm run start:dev           # API en http://localhost:3000/api, Swagger en /api/docs
 ```
 
-## Run tests
+## Scripts
+
+| Comando | Qué hace |
+|---|---|
+| `npm run harness:verify` | **Gate Nivel A completo:** estructura del harness + Node + `feature_list.json` + trazabilidad TDD + build + typecheck + lint + jest con cobertura. Es lo que corre CI. |
+| `npm run harness:estructura` | Solo la parte estructural (rápido, sin `node_modules`). No cierra una feature. |
+| `npm run build` | `nest build` (solo producción; excluye specs). |
+| `npm run typecheck` | `tsc --noEmit` sobre `src/` y `test/`. |
+| `npm run lint` / `npm run lint:check` | ESLint 10 (`strictTypeChecked` + `stylisticTypeChecked` + jest + prettier) con y sin `--fix`. |
+| `npm run format` / `npm run format:check` | Prettier (`printWidth` 100, LF). |
+| `npm test` / `npm run test:cov` | Pruebas unitarias con Jest 30 (ts-jest). |
+| `npm run test:e2e` | **Nivel B:** e2e contra PostgreSQL real; se omite (skip) sin variables `DB_*`/`JWT_SECRET`. |
+| `npm run test:e2e:docker` | **Nivel B en un paso:** levanta PostgreSQL 17 desechable con `compose.yaml`, corre la e2e y lo borra (`-- --keep` lo deja arriba). Requiere Docker. |
+
+## Docker (Nivel B y despliegue)
+
+`Dockerfile` construye la API en dos etapas sobre la misma versión de Node de `.nvmrc`;
+`compose.yaml` levanta PostgreSQL 17 (en memoria, desechable) y, con `--profile app`, la API.
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run test:e2e:docker                              # suite e2e contra PostgreSQL en Docker
+docker compose --profile app up -d --build --wait    # API en http://localhost:3000/api + Swagger en /api/docs
+docker compose --profile app down -v                 # apaga y borra todo
 ```
 
-## Deployment
+Las credenciales por omisión de `compose.yaml` son de esa base vacía y temporal; se sobreescriben con
+variables de entorno o con tu `.env`. CI (`.github/workflows/gate.yml`) corre el gate, la e2e contra
+un PostgreSQL efímero y un smoke de la imagen con el mismo `compose.yaml`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Verificación: gate de dos niveles
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- **Nivel A (automático):** `npm run harness:verify` termina en `[OK]`. El gate **entiende la fase
+  RED** del ciclo TDD: con una feature en `red` tolera fallos solo dentro de la batería declarada.
+- **Nivel B (declarado):** comportamiento contra PostgreSQL real, invalidación de JWT end-to-end,
+  esquema y Swagger. No se sustituye con mocks: se declara en `progress/impl_<name>.md`.
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+Detalle de cada check, baseline de advertencias, piso de cobertura y pruebas negativas:
+[docs/verifications.md](docs/verifications.md). Definición de "Hecho": [CHECKPOINTS.MD](CHECKPOINTS.MD).
+
+## Estructura
+
+```
+src/                 API NestJS (auth/, users/, common/, config/)
+test/                e2e (Nivel B) con su tsconfig
+scripts/harness/     verify.mjs (gate) y check-changed.mjs (hook PostToolUse)
+.claude/             agentes (leader, planner, implementer, reviewer), slash commands, hooks
+docs/                migración Express→NestJS (histórico) y verifications.md (vigente)
+progress/            estado de la sesión, bitácora y documentos de diseño/implementación/revisión
+feature_list.json    backlog, reglas del harness, baseline y piso de cobertura
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Licencia
 
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED — proyecto personal de aprendizaje, sin licencia de uso.

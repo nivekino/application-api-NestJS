@@ -9,7 +9,7 @@ import { UsersController } from './users.controller';
   imports: [TypeOrmModule.forFeature([User])],
   controllers: [UsersController],
   providers: [UsersService, PasswordService],
-  // Se exportan para que AuthModule (CP-04) los reutilice.
+  // Se exportan para que AuthModule los reutilice.
   exports: [UsersService, PasswordService],
 })
 export class UsersModule {}

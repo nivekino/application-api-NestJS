@@ -1,15 +1,40 @@
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
+import { EnvironmentVariables } from './config/env.validation';
+import { WinstonLoggerService } from './common/logger/winston-logger.service';
+
+/**
+ * Documentación Swagger en `/api/docs` con esquema Bearer JWT llamado
+ * `'access-token'` (el mismo nombre que declaran los controllers protegidos
+ * con `@ApiBearerAuth('access-token')`).
+ */
+function configurarSwagger(app: INestApplication): void {
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Application API')
+    .setDescription('API migrada desde Express hacia NestJS 12.')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'access-token',
+    )
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  // Usa Winston como logger de la aplicación.
-  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+  // Usa el logger propio (Winston) como logger de la aplicación.
+  app.useLogger(app.get(WinstonLoggerService));
 
   // Prefijo global de la API.
   app.setGlobalPrefix('api');
@@ -33,23 +58,9 @@ async function bootstrap() {
   // Cabeceras de seguridad.
   app.use(helmet());
 
-  // Documentacion Swagger en /api/docs con esquema Bearer JWT.
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Application API')
-    .setDescription('API migrada desde Express hacia NestJS 11 (Kata Software).')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-      },
-      'access-token',
-    )
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  configurarSwagger(app);
 
-  await app.listen(process.env.PORT ?? 3000);
+  const config = app.get<ConfigService<EnvironmentVariables, true>>(ConfigService);
+  await app.listen(config.get('PORT', { infer: true }));
 }
 void bootstrap();

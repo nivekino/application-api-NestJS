@@ -43,7 +43,7 @@ comportamiento de `http-response.ts` y `logger.ts` del origen.
 
 **Resultado del build/lint:** `npm run build` compila sin errores. `npm run lint` deja limpios todos los archivos de la migración (Prettier reformateó). El único error de lint pendiente estaba en `app.controller.spec.ts` (scaffold viejo) y se reescribe en CP-06.
 
-**Seguridad Kata:**
+**Seguridad de datos:**
 - El filtro NUNCA loguea el body de la petición, cabeceras (`Authorization`) ni el stack con datos sensibles; solo método, ruta, status y mensaje.
 - La validación de env reporta propiedad+restricción, nunca el valor del secreto.
 - Winston solo serializa los metadatos que se le pasan explícitamente; no hay transports que vuelquen `process.env` ni la cadena de conexión.

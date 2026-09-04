@@ -13,6 +13,7 @@
 - **Fase:** — (diseño / RED / puerta humana / GREEN / revisión)
 - **Inicio:** —
 - **`needs_design`:** — (y su disparador, si aplica)
+- **`red_modo`:** — (nuevo / caracterizacion)
 
 ## Plan (3-5 puntos)
 
@@ -35,6 +36,7 @@
 
 - `npm run harness:verify`: —
 - Advertencias de deuda vs. baseline (`docs/verifications.md` §4): —
+- Cobertura vs. piso (`rules.cobertura_minima`): —
 - **Nivel B declarado:** no
 
 ## Bloqueos

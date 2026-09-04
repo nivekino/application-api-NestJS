@@ -1,0 +1,12 @@
+# Solo entra al contexto de build lo que la imagen necesita (Dockerfile). Todo lo demas
+# se excluye: acelera el build y, sobre todo, evita que .env, logs o coverage acaben
+# dentro de una imagen (seguridad de datos).
+*
+!package.json
+!package-lock.json
+!.npmrc
+!tsconfig.json
+!tsconfig.build.json
+!nest-cli.json
+!src/
+src/**/*.spec.ts

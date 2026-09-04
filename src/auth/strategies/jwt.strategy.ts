@@ -4,7 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
 import { User } from '../../users/entities/user.entity';
-import { JwtPayload } from '../auth.service';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -31,8 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Regla de invalidación de tokens: rechazar si el token fue emitido antes
     // del último login registrado. `lastTokenIssuedAt` es bigint -> el driver
-    // pg lo devuelve como string, por eso se coerciona a Number.
-    if (user.lastTokenIssuedAt !== null && user.lastTokenIssuedAt !== undefined) {
+    // pg lo devuelve como string (asi lo declara la entidad), por eso se
+    // coerciona a Number antes de comparar.
+    if (user.lastTokenIssuedAt !== null) {
       const lastIssued = Number(user.lastTokenIssuedAt);
       if (payload.iat < lastIssued) {
         throw new UnauthorizedException();

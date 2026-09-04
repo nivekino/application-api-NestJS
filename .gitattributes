@@ -1,0 +1,6 @@
+# Finales de linea LF en todo texto, tambien en checkouts de Windows (core.autocrlf=true
+# los convertiria a CRLF y Prettier marcaria cada archivo). Ver docs/verifications.md seccion 6.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

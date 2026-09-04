@@ -3,13 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { PasswordService } from '../users/password.service';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
 
-export interface JwtPayload {
-  sub: string;
-  username: string;
-  role: string;
-  iat: number;
-}
+// Regla de negocio: expiración fija de 8h para todo token emitido (documentada
+// también en CLAUDE.md). Un solo lugar para el valor, igual que
+// PasswordService.SALT_ROUNDS.
+const EXPIRACION_TOKEN = '8h';
 
 @Injectable()
 export class AuthService {
@@ -19,7 +18,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(payload: AuthCredentialsDto): Promise<{ token: string }> {
+  async login(payload: AuthCredentialsDto): Promise<AuthResponseDto> {
     const user = await this.usersService.findByUsername(payload.username);
     if (!user) {
       throw new UnauthorizedException('Usuario incorrecto');
@@ -43,7 +42,7 @@ export class AuthService {
         role: user.role,
         iat: issuedAtSeconds,
       },
-      { expiresIn: '8h' },
+      { expiresIn: EXPIRACION_TOKEN },
     );
 
     return { token };
