@@ -130,7 +130,7 @@ Una constante `APP_LOGGER` (string) y su comentario: por qué existe un token pr
 - `import * as winston from 'winston';` solo para el tipo `LoggerOptions` si hace falta; la interfaz `WinstonLike` se declara aquí.
 - `implements LoggerService` de `@nestjs/common`. **`LoggerService` puede importarse como `import type`** (es una interfaz, no se inyecta ni se valida; acoplamiento 12 respetado). `Injectable` **no** puede ser `import type`.
 - Un método privado `escribir(nivel, message, optionalParams)` que concentra el mapeo, y los seis métodos públicos delegando en él. Un solo lugar donde se decide qué llega al metadato = un solo lugar que auditar por datos sensibles.
-- Cabecera con la nota de seguridad Kata (equivalente a la que ya tiene `winston.config.ts`).
+- Cabecera con la nota de seguridad de datos (equivalente a la que ya tiene `winston.config.ts`).
 
 > **Nota de tipado para el implementer:** si `winston.Logger` no resulta asignable a `WinstonLike` durante el typecheck (sobrecargas de `LogMethod`), el respaldo es `export type WinstonLike = Pick<winston.Logger, 'log'>;`. Es un detalle de compilación, no una decisión de diseño: elige el que compile sin `any` ni `eslint-disable`.
 
@@ -164,7 +164,7 @@ Dos razones para las dos formas de registro:
 | `http-exception.filter.ts` | `import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston'` · `@Inject(WINSTON_MODULE_NEST_PROVIDER)` | `import { APP_LOGGER } from '../logger/logger.tokens'` · `@Inject(APP_LOGGER)` |
 | `app.module.ts` | `import { WinstonModule } from 'nest-winston'` · `WinstonModule.forRoot(buildWinstonOptions())` en `imports` | `import { LoggerModule } from './common/logger/logger.module'` · `LoggerModule` en `imports` (mismo lugar, después de `ConfigModule`) |
 | `main.ts` | `app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER))` | `app.useLogger(app.get(WinstonLoggerService))` |
-| `main.ts` (Swagger) | `.setDescription('API migrada desde Express hacia NestJS 11 (Kata Software).')` | `… NestJS 12 …` — **es texto publicado en `/api/docs`**, no lo dejes desfasado |
+| `main.ts` (Swagger) | `.setDescription('API migrada desde Express hacia NestJS 11.')` | `… NestJS 12 …` — **es texto publicado en `/api/docs`**, no lo dejes desfasado |
 
 `buildWinstonOptions()` **no cambia de comportamiento**: mismos niveles, mismos tres transports, misma rotación, mismo `defaultMeta`. Cambiar transports o retención sería otra feature.
 
@@ -195,7 +195,7 @@ Si `validate:` como función desapareciera en favor de Standard Schema, **no se 
 export const envSchema = {
   '~standard': {
     version: 1,
-    vendor: 'kata',
+    vendor: 'application-api',
     validate: (value: unknown) => ({ value: validateEnv(value as Record<string, unknown>) }),
   },
 };
@@ -222,7 +222,7 @@ Mock tipado: `type WinstonMock = jest.Mocked<Pick<WinstonLike, 'log'>>;` y `new 
 | T5 | `fatal se registra en winston con nivel error marcado como fatal` |
 | T6 | `sin contexto registra solo el mensaje, sin metadatos adicionales` |
 
-- **T6 es además la prueba de seguridad Kata:** afirma con `toHaveBeenCalledWith` **exacto** que no se adjunta nada más al metadato. Winston escribe a archivo rotado; lo que se cuele ahí **queda en disco** (acoplamiento 9).
+- **T6 es además la prueba de seguridad de datos:** afirma con `toHaveBeenCalledWith` **exacto** que no se adjunta nada más al metadato. Winston escribe a archivo rotado; lo que se cuele ahí **queda en disco** (acoplamiento 9).
 - **T4 cubre dos métodos en un `it()`** a propósito: son el mismo camino de código con distinto nivel, y `jest/expect-expect` se satisface con los dos `expect` sobre el mock.
 
 ### 5.2. `src/common/logger/logger.module.spec.ts` — Nivel A, criterio 2
@@ -411,7 +411,7 @@ Solo se listan decisiones de **negocio o de plataforma del usuario**. Cada una t
 | # | Pregunta | Valor por omisión recomendado |
 |---|---|---|
 | **Q1** | **¿Se sube el piso de Node?** Requiere que el usuario instale **Node 24.20.0** (hoy tiene 24.11.1) **antes** de la fase GREEN, porque `.npmrc` tiene `engine-strict`. | **Sí:** instalar 24.20.0 y subir `engines.node` a `>=24.15.0`, dejando `.nvmrc` en `24.20.0`. Es el único camino plenamente soportado por el CLI 12 y elimina la incógnita P1. Si el usuario no puede cambiar de Node: dejar `engines` como está y usar el plan B de build. |
-| **Q2** | **¿Se acepta salir de `nest-winston` y mantener un adaptador propio (~60 líneas) en `src/common/logger/`?** Implica que Kata mantiene ese código; a cambio se elimina una dependencia del árbol y la migración deja de depender de un issue de terceros sin fecha. | **Sí** (opción A de §4). La configuración de transports y rotación —lo valioso— ya es propia y no cambia. |
+| **Q2** | **¿Se acepta salir de `nest-winston` y mantener un adaptador propio (~60 líneas) en `src/common/logger/`?** Implica que el proyecto mantiene ese código; a cambio se elimina una dependencia del árbol y la migración deja de depender de un issue de terceros sin fecha. | **Sí** (opción A de §4). La configuración de transports y rotación —lo valioso— ya es propia y no cambia. |
 | **Q3** | **Si `@nestjs/config` 12 obliga a Standard Schema (P2), ¿se autoriza agregar un paquete de validación (Zod) o se prefiere el adaptador sin dependencias?** | **Adaptador sin dependencias** (§4.6): reusa `validateEnv` con class-validator, que ya es la fuente de verdad de las variables de entorno. Agregar Zod sería un D9 no planeado. |
 | **Q4** | **¿El `fatal()` de NestJS 12 se registra como `error` de winston con `{ fatal: true }`, o se agrega un nivel `fatal` propio a `winston.config.ts`?** Un nivel nuevo cambia el archivo transversal y la forma de los logs históricos. | **`error` + `{ fatal: true }`**: no altera la configuración de transports ni el parseo de los logs existentes. |
 | **Q5** | **¿Se corre el Nivel B en esta feature o se difiere a una persona?** `docs/verifications.md` §6.8 registra que el Nivel B **sigue pendiente desde el 2026-09-03** (sin PostgreSQL local y con el daemon de Docker apagado). Esta feature toca framework, auth y logger a la vez: es la peor candidata para diferirlo. | **Correrlo:** levantar el contenedor `postgres:17` de `docs/verifications.md` §1 y ejecutar B1–B7. Si el entorno no lo permite, **declararlo como pendiente asignado a una persona** en `progress/impl_…md` — el `reviewer` no aprueba sin la declaración, y el `leader` debe saber que cierra la feature con el riesgo abierto. |

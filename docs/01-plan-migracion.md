@@ -1,4 +1,4 @@
-# Plan de migración — Express → NestJS 11 + PostgreSQL/TypeORM
+# Plan de migración — Express → NestJS + PostgreSQL/TypeORM
 
 > Roadmap operativo de la migración, **ya cerrada** (CP-00…CP-06 en estado `Hecho`). Se ejecutó un
 > checkpoint a la vez. Análisis de origen en [`00-analisis-proyectos.md`](00-analisis-proyectos.md).
@@ -36,7 +36,7 @@ de NestJS, validación global, manejo de errores y logging estandarizados, y doc
 | `src/utils/container.ts`, `types.ts` | (eliminado) | DI nativa. |
 | `src/utils/validate.ts` | `ValidationPipe` global | Validación automática. |
 | `src/utils/http-response.ts` | `common/` interceptor + `HttpExceptionFilter` | Respuesta `{ statusCode, message, resource, isError }`. |
-| `src/utils/logger.ts` (Winston) | `nest-winston` | Mismos transports. |
+| `src/utils/logger.ts` (Winston) | `common/logger/` (`WinstonLoggerService` propio, feature #3) | Mismos transports; `nest-winston` no soporta NestJS 12 y se reemplazó por un adaptador propio sobre `winston`. |
 
 ## Estructura destino propuesta
 
@@ -76,7 +76,7 @@ application-api-NestJS/
 - **Invalidación de JWT:** rechazar tokens con `iat < user.lastTokenIssuedAt`.
 - **JWT:** payload `{ sub, username, role, iat }`, expiración `8h`.
 - **Contraseñas:** bcrypt, salt rounds `10`. Nunca exponer el hash en respuestas/listados.
-- **Seguridad de datos (Kata):** no registrar contraseñas, `JWT_SECRET` ni cadenas de conexión en logs.
+- **Seguridad de datos:** no registrar contraseñas, `JWT_SECRET` ni cadenas de conexión en logs.
 
 ## Verificación end-to-end
 

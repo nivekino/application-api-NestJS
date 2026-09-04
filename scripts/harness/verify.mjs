@@ -22,7 +22,7 @@
  *
  * Salida: [OK] (exit 0) o [FAIL] (exit 1).
  *
- * Nota Kata: todo corre local, no envia datos a servicios externos.
+ * Nota: todo corre local, no envia datos a servicios externos.
  */
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
@@ -38,7 +38,7 @@ const SOLO_ESTRUCTURA = process.argv.includes('--estructura');
 // Este repo se opera en Windows/PowerShell. El tool de shell se llama
 // "PowerShell": declarar "Bash" en el frontmatter de un subagente NO le da un
 // shell alterno, lo deja SIN shell, y falla en silencio. Consecuencia medida en
-// el portafolio Formiik de Kata (2026-08-02): el leader no podia correr el gate
+// un portafolio previo de proyectos (2026-08-02): el leader no podia correr el gate
 // -- paso 1 de su propio ciclo -- y el reviewer tampoco, que es su razon de
 // existir. Si el equipo migra a Linux/macOS, se cambia AQUI y en ningun otro
 // lado.
@@ -865,8 +865,13 @@ if (SOLO_ESTRUCTURA) {
   rmSync(dirHarness, { recursive: true, force: true });
   mkdirSync(dirHarness, { recursive: true });
   {
+    // --experimental-vm-modules: jest-runtime solo puede require() los @nestjs/*
+    // (ESM puro desde NestJS 12) si Node expone vm.SourceTextModule, y esa API
+    // vive detras de esta bandera experimental (Node no la habilita por
+    // defecto ni siquiera en 24.9+). Sin ella, cualquier suite que importe
+    // @nestjs/common falla con ERR_REQUIRE_ESM aunque el runtime lo soporte.
     const r = correr(
-      `npx jest --coverage --coverageReporters=json-summary --coverageReporters=text-summary --json --outputFile="${jsonJest}"`,
+      `node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=json-summary --coverageReporters=text-summary --json --outputFile="${jsonJest}"`,
       { stdio: ['ignore', 'pipe', 'inherit'] },
     );
     let reporte;
