@@ -1,6 +1,6 @@
 # Análisis comparativo de proyectos — `application-api` (Express) vs `application-api-NestJS`
 
-> Documento base de la migración. Fecha: 2026-06-29. Equipo: Kata Software.
+> Documento base de la migración. Fecha: 2026-06-29. Autor: nivekino (proyecto personal de aprendizaje).
 
 ## 1. Resumen ejecutivo
 
@@ -95,7 +95,7 @@ Sin BD, sin módulos de features, sin dependencias adicionales. Configuración m
 - **Cambio de paradigma de datos:** documentos Mongo → tablas relacionales. Con base limpia el riesgo es bajo;
   solo se define el esquema. `synchronize: true` solo en desarrollo (en producción, migraciones TypeORM).
 - **Eliminación de InversifyJS:** simplifica el código; verificar que cada dependencia quede declarada en su módulo.
-- **Seguridad de datos (Kata):** nunca registrar contraseñas, JWT_SECRET ni cadenas de conexión.
+- **Seguridad de datos:** nunca registrar contraseñas, JWT_SECRET ni cadenas de conexión.
   CORS hoy es `*` en Express; revisar restringirlo en NestJS para producción.
 
 Ver el roadmap y el detalle de tareas en [`01-plan-migracion.md`](01-plan-migracion.md) y en

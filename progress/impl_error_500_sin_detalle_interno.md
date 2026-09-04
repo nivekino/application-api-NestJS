@@ -207,7 +207,7 @@ tocar producción) se tuvo presente:
 
 | Archivo | Acción | Descripción |
 |---|---|---|
-| `src/common/filters/http-exception.filter.ts` | Modificado | Único archivo de producción tocado, conforme al diseño §4.1: se desdobló `message` en `message` (cuerpo de la respuesta) y `mensajeInterno` (solo logger). Se amplió el JSDoc de seguridad Kata con la línea que aclara que el mensaje interno de una excepción no controlada va solo al log. |
+| `src/common/filters/http-exception.filter.ts` | Modificado | Único archivo de producción tocado, conforme al diseño §4.1: se desdobló `message` en `message` (cuerpo de la respuesta) y `mensajeInterno` (solo logger). Se amplió el JSDoc de seguridad de datos con la línea que aclara que el mensaje interno de una excepción no controlada va solo al log. |
 | `feature_list.json` | Modificado | `status` de la feature #4 pasó de `red` a `green`. `tdd_contract` sin cambios (ya se escribió en RED). |
 | `progress/current.md` | Modificado | Se marcó la fase GREEN como completada, aprobada por el usuario y con el Nivel B declarado. |
 | `progress/impl_error_500_sin_detalle_interno.md` | Modificado | Esta sección y las siguientes (fase GREEN). |
@@ -232,7 +232,7 @@ No se tocó `src/main.ts`, `src/app.module.ts`, ningún controller, DTO, entidad
 4. **La llamada al logger** pasa de interpolar `message` a interpolar `mensajeInterno`; es el único
    cambio en esa línea. Esto preserva el criterio 2 (el log conserva el `message` real del `Error`)
    sin alterar el formato `MÉTODO ruta -> status: mensaje` que ya fijaba el `it()` existente.
-5. **JSDoc ampliado, no reescrito:** se agregó una sola oración al bloque de seguridad Kata que ya
+5. **JSDoc ampliado, no reescrito:** se agregó una sola oración al bloque de seguridad de datos que ya
    encabezaba el archivo, tal como pide el diseño §4.1 y §3 (precedente a espejar).
 6. **Sin `import type` nuevo ni cambios de dependencias:** el diseño confirmó que el acoplamiento 12
    (metadatos de decoradores) no aplica; no se tocó ninguna clase inyectada.

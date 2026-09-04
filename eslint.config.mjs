@@ -12,7 +12,7 @@
 // Prettier se aplica al final como regla (prettier/prettier) y apaga las reglas de formato que
 // chocarian con el.
 //
-// Nota Kata: todo corre local; el linter no envia nada a servicios externos.
+// Nota: todo corre local; el linter no envia nada a servicios externos.
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import jest from 'eslint-plugin-jest';

@@ -94,7 +94,7 @@ de propagar el crudo del framework**, con un literal fijo y controlado. La featu
 patrón a la rama `instanceof Error`, con la diferencia de que ahí **no** se publica ningún `resource`
 (el detalle no se degrada: se retira de la respuesta y se conserva en el log).
 
-Precedente secundario a espejar: el **bloque JSDoc de seguridad Kata** que ya encabeza el archivo
+Precedente secundario a espejar: el **bloque JSDoc de seguridad de datos** que ya encabeza el archivo
 (*"solo se registran método, ruta, status y mensaje. NUNCA se loguea el cuerpo de la petición…"*). Se
 amplía con una línea, no se reescribe.
 
@@ -225,7 +225,7 @@ pasa por el interceptor, no hay doble envoltura; 5 (Swagger/`access-token`) — 
 2. El repo ya arrastra una bifurcación por `NODE_ENV` con consecuencias serias (`synchronize:
    NODE_ENV !== 'production'`); agregar una segunda hace que la respuesta a "¿qué devuelve la API?"
    dependa de una variable de entorno, y eso no se ve leyendo el controller.
-3. En Kata, DEV/QA **no son entornos inocuos**: llevan datos de prueba de flujos de crédito y cobranza y
+3. DEV/QA **no son entornos inocuos**: llevan datos de prueba de flujos de crédito y cobranza y
    son accesibles a más personas que producción.
 4. Haría el spec dependiente de `process.env`, con fuga de estado entre pruebas y un `it()` que pasa o
    falla según cómo se corrió Jest.

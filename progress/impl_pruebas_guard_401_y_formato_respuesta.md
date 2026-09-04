@@ -259,7 +259,7 @@ feature), no relacionado con las mutaciones aplicadas aquí.
    (`{ username: 'jdoe', password: 'Sup3rSecreta!' }`) y se afirma con
    `expect(logger.error).not.toHaveBeenCalledWith(expect.stringContaining('Sup3rSecreta!'))` que nunca
    llega al log — cubre explícitamente la cláusula "nunca el cuerpo de la petición" del criterio 4 y la
-   regla de datos sensibles de Kata.
+   regla de datos sensibles del proyecto.
 6. **Mocks tipados en los tres archivos:** `jest.Mocked<Pick<LoggerService, 'log' | 'error' | 'warn'>>`
    para el logger del filtro (sin `any` ni `as jest.Mock`); `ExecutionContext`, `ArgumentsHost` y
    `Response`/`Request` se construyen como objetos mínimos y se castean con `as unknown as X`, tal como
