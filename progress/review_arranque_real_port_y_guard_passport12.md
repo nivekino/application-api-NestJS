@@ -148,8 +148,8 @@ timestamps incoherentes, salidas que no casan con el comando invocado).
   `src/main.ts`, `Dockerfile`, `compose.yaml`, `package.json`, etc.) que corresponden a las features #3 y
   #4 (ya `done`) y al mantenimiento de infraestructura Docker/CI del 2026-09-04, ambos documentados en
   `progress/history.md`. No pertenecen a la #5 y no se penalizan aquí.
-- **Sin menciones a "Kata"/"Formiik"** en ningún archivo de `src/`, `test/` ni en los documentos tocados
-  por esta feature; la única coincidencia de "kata" en el repo es un falso positivo dentro de un hash de
+- **Sin menciones a la marca corporativa** en ningún archivo de `src/`, `test/` ni en los documentos tocados
+  por esta feature; la única coincidencia de la marca en el repo es un falso positivo dentro de un hash de
   integridad de `package-lock.json` (`sha512-vKatAh4...`), ya señalado y explicado en revisiones previas.
 
 ## 6. Higiene

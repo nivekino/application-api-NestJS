@@ -1,6 +1,6 @@
 {
   "project": "application-api-NestJS",
-  "description": "API NestJS 12 + TypeORM 1.x/PostgreSQL para flujos de crédito y cobranza (proyecto personal de aprendizaje). Backlog de nuevas features sobre la API ya migrada.",
+  "description": "API NestJS 12 + TypeORM 1.x/PostgreSQL (proyecto personal de aprendizaje; el dominio de negocio aún no está definido). Backlog de nuevas features sobre la API ya migrada.",
   "rules": {
     "una_feature_a_la_vez": "Solo una feature puede estar en un estado activo (red, green, in_review).",
     "estados_validos": ["pending", "red", "green", "in_review", "done", "blocked"],

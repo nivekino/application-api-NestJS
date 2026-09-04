@@ -27,7 +27,7 @@ export interface WinstonLike {
  * servicio NUNCA serializa un objeto arbitrario al log: solo adjunta como
  * metadato el `context` que NestJS pasa como string y, en `error`, el
  * `stack`. Un `JSON.stringify(message)` cómodo podría convertir cualquier
- * objeto de crédito o cobranza en una línea persistida.
+ * objeto de dominio en una línea persistida.
  *
  * `setLogLevels` no se implementa a propósito: el nivel lo decide
  * `buildWinstonOptions()` a partir de `NODE_ENV`, en un solo lugar. Si

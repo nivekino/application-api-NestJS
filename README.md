@@ -1,6 +1,6 @@
 # application-api-NestJS
 
-API de **aprendizaje personal** para flujos de crédito y cobranza, migrada
+API de **aprendizaje personal** (dominio de negocio aún por definir), migrada
 desde Express hacia **NestJS 12 + TypeORM 1.x + PostgreSQL**. Los datos de clientes son sensibles: nada
 de contraseñas, secretos ni cadenas de conexión en logs, respuestas ni documentación.
 

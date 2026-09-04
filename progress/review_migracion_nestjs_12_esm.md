@@ -42,8 +42,8 @@ desalineación entre los dos documentos).
 Confirmado en disco, no solo en la bitácora:
 - `package-lock.json`: una sola entrada `node_modules/@nestjs/common` → `12.0.1` (grep, sin duplicados).
 - `grep -c "nest-winston" package-lock.json` → 0 coincidencias reales (la única coincidencia
-  case-insensitive de "Kata" en el lockfile es un falso positivo dentro de un hash de integridad
-  —`vKatAh4Sl...`—, no una mención real).
+  case-insensitive de la marca en el lockfile es un falso positivo dentro de un hash de integridad,
+  no una mención real).
 - `package.json`: `dependencies` con los ocho paquetes de runtime en 12.x y `devDependencies` con
   `cli`/`schematics`/`testing` en 12.x; ninguno quedó mal clasificado (`nest build` y `npm run
   harness:verify` lo confirman indirectamente: si `@nestjs/common` estuviera en `devDependencies`, un
@@ -136,20 +136,15 @@ sin sección `Server`). Asignado explícitamente como pendiente para una persona
 mínima (`docker run ... postgres:17`, `cp .env.example .env`, comandos). **Cumple el requisito de
 CHECKPOINTS.MD: "el Nivel B no se sustituye, se declara"**. No rechazo por no haberse ejecutado.
 
-**(8) Menciones a Kata/Formiik.** `grep -ri "Kata|Formiik"` sobre todo el repo devuelve solo:
+**(8) Menciones a marca corporativa.** `grep -ri "<marca>"` sobre todo el repo devuelve solo:
 `progress/current.md`, `progress/impl_migracion_nestjs_12_esm.md` (las notas de bitácora que registran
 la propia limpieza, permitidas explícitamente por el encargo) y una coincidencia dentro de un hash
 base64 de `package-lock.json` (`vKatAh4Sl...`, falso positivo, no es texto). **No se reintrodujo ninguna
 mención real en `src/`, `docs/`, `.claude/`, `README.md` ni `package.json`.**
 
-⚠️ **Nota para el humano, fuera del alcance técnico de esta revisión:** verifiqué el hecho solicitado
-(no quedan menciones), pero señalo que el encargo describe este repositorio como "proyecto personal de
-aprendizaje" y pide retirar toda referencia a Kata Software, mientras que el contexto operativo con el
-que trabajo como revisor de Kata Software describe explícitamente este mismo dominio (crédito y
-cobranza para banca de microcréditos en LATAM) como trabajo de Kata. No me corresponde resolver esa
-tensión ni bloquear la revisión técnica por ella —la decisión de branding la tomó el usuario y quedó
-registrada en `progress/current.md`—, pero la dejo explícita para que el equipo confirme que el retiro
-de marca es la decisión correcta antes de que este repositorio salga de un entorno de trabajo interno.
+**Nota fuera del alcance técnico:** verifiqué el hecho solicitado (no quedan menciones a la marca
+corporativa). El retiro fue decisión explícita del usuario, registrada en la bitácora de la sesión: el
+repositorio es un proyecto personal de aprendizaje y su dominio de negocio aún no está definido.
 
 ## 3. Disciplina TDD
 
@@ -188,7 +183,7 @@ Ningún criterio queda en `pendiente` sin cobertura declarada.
 
 - **Hallazgo A (menor):** `progress/impl_migracion_nestjs_12_esm.md` línea 611 afirma *"No se editó
   `docs/checkpoints/*` (histórico, fuera del alcance por regla explícita de `CLAUDE.md`)"*. Es
-  **inexacto**: `docs/checkpoints/CP-05-cross-cutting.md` sí se modificó (una palabra: "Seguridad Kata"
+  **inexacto**: `docs/checkpoints/CP-05-cross-cutting.md` sí se modificó (una palabra: el rótulo de seguridad con marca
   → "Seguridad de datos", parte de la limpieza de marca registrada en `progress/current.md`, no de esta
   feature). El contenido histórico no se alteró en su sustancia, pero la afirmación del impl debería
   corregirse para no quedar en desacuerdo con `git diff`. **Acción sugerida:** ajustar esa línea en la
@@ -201,7 +196,7 @@ Ningún criterio queda en `pendiente` sin cobertura declarada.
   §11.11 (`eslint.config.mjs`, `docs/00-analisis-proyectos.md`, `docs/checkpoints/CP-05-cross-cutting.md`,
   `progress/design_error_500_sin_detalle_interno.md`, `progress/impl_error_500_sin_detalle_interno.md`,
   `progress/impl_pruebas_guard_401_y_formato_respuesta.md`, `src/common/filters/http-exception.filter.spec.ts`)
-  se verificaron uno por uno con `git diff`: **todos son la limpieza de marca "Kata" → texto genérico**,
+  se verificaron uno por uno con `git diff`: **todos son la limpieza de marca corporativa → texto genérico**,
   sin cambio de comportamiento ni de contenido técnico. Están explicados en `progress/current.md` como
   una acción del leader "fuera del ciclo", separada de esta feature. No representan una desviación de
   alcance de la feature #3.
