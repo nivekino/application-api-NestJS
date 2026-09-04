@@ -1,8 +1,20 @@
-# Gate automatico (Nivel A) del harness en CI: la misma verificacion que corre
-# cada agente en local, sobre la version de Node acordada en .nvmrc.
+# Gate del harness en CI, sobre la version de Node acordada en .nvmrc.
 #
-# NO corre el Nivel B (test:e2e contra PostgreSQL): eso se declara en
-# progress/impl_<name>.md y lo ejecuta una persona. Ver docs/verifications.md.
+# Tres trabajos independientes:
+#   nivel-a      La misma verificacion que corre cada agente en local (npm run harness:verify).
+#                Es la puerta que nunca se salta.
+#   nivel-b-e2e  La suite e2e (test/app.e2e-spec.ts) contra un PostgreSQL 17 efimero del
+#                propio runner. Cubre el caso B2 del Nivel B de forma automatica.
+#   docker-smoke Construye la imagen (Dockerfile) y levanta API + PostgreSQL con compose.yaml,
+#                igual que en local, y comprueba que la API responde, publica Swagger y
+#                rechaza sin token. Cubre B1 y B4, y valida el despliegue en contenedor.
+#
+# El Nivel B sigue siendo DECLARADO en progress/impl_<name>.md (docs/verifications.md
+# seccion 1): CI automatiza B1/B2/B4, pero B3 (invalidacion real de JWT), B5, B6 y B7 se
+# ejecutan y se declaran por una persona hasta que tengan su propio caso e2e.
+#
+# Seguridad de datos: las credenciales de abajo son de una base vacia que vive solo lo que
+# dura el job. No son secretos reales y no deben reutilizarse en ningun entorno con datos.
 name: gate
 
 on:
@@ -24,3 +36,63 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run harness:verify
+
+  nivel-b-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-solo-local
+          POSTGRES_DB: application_api
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d application_api"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      NODE_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: ci-solo-local
+      DB_NAME: application_api
+      JWT_SECRET: ci-solo-local-no-es-un-secreto-real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run test:e2e
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir y levantar API + PostgreSQL (compose.yaml)
+        run: docker compose --profile app up -d --build --wait
+      - name: Smoke - GET /api/ responde con el envoltorio estandar
+        run: |
+          body="$(curl -fsS http://localhost:3000/api/)"
+          echo "$body"
+          echo "$body" | grep -q '"msg":"Server is up and running"'
+          echo "$body" | grep -q '"isError":false'
+      - name: Smoke - Swagger publicado en /api/docs
+        run: curl -fsS -o /dev/null -w '%{http_code}\n' http://localhost:3000/api/docs | grep -qx 200
+      - name: Smoke - endpoint protegido responde 401 sin token, con formato estandar de error
+        run: |
+          body="$(curl -sS -X POST http://localhost:3000/api/users -H 'Content-Type: application/json' -d '{}')"
+          echo "$body"
+          echo "$body" | grep -q '"statusCode":401'
+          echo "$body" | grep -q '"isError":true'
+      - name: Logs de los contenedores (solo si algo fallo)
+        if: failure()
+        run: docker compose --profile app logs
+      - name: Apagar y borrar
+        if: always()
+        run: docker compose --profile app down -v

@@ -1,0 +1,56 @@
+# Entorno DESECHABLE para el Nivel B del harness (docs/verifications.md seccion 1).
+#
+#   docker compose up -d --wait db               # solo PostgreSQL, para `npm run test:e2e`
+#   npm run test:e2e:docker                      # lo anterior + suite e2e + down -v, en un paso
+#   docker compose --profile app up -d --build --wait   # API + PostgreSQL, para B1/B3-B7 y el smoke de CI
+#   docker compose --profile app down -v         # apaga y borra TODO
+#
+# Reglas:
+# - Es una base de prueba que nace vacia y muere con `down -v` (tmpfs): NUNCA se apunta a
+#   DEV/QA con datos (acoplamiento 6 de .claude/agents/planner.md: `synchronize` activo
+#   fuera de produccion puede eliminar columnas y sus datos).
+# - Los valores por omision de abajo son SOLO para este contenedor local. No son secretos
+#   reales y no deben reutilizarse en ningun entorno con datos. Se pueden sobreescribir con
+#   variables de entorno del shell o con un `.env` (compose lo lee para la sustitucion).
+# - El healthcheck de `db` es lo que hace fiable `--wait`: la API reintenta la conexion
+#   (retryAttempts 5 x 5 s), pero la suite e2e no.
+
+name: application-api-nestjs
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-solo-local}
+      POSTGRES_DB: ${DB_NAME:-application_api}
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    # Datos en memoria: base desechable por construccion.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-application_api}']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    # Solo con `--profile app`: `npm run test:e2e` no lo necesita (la suite levanta la app en proceso).
+    profiles: [app]
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # development a proposito: synchronize crea el esquema en la base desechable (B7).
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-solo-local}
+      DB_NAME: ${DB_NAME:-application_api}
+      JWT_SECRET: ${JWT_SECRET:-solo-local-cambiame}
+    ports:
+      - '${PORT:-3000}:3000'
