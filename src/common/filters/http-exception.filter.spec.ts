@@ -128,17 +128,17 @@ describe('HttpExceptionFilter', () => {
   it('HttpExceptionFilter conserva el message de una HttpException lanzada a propósito, incluso cuando su status es 500', () => {
     const host = construirHost({ method: 'GET', url: '/api/users' });
 
-    filter.catch(new InternalServerErrorException('Saldo no disponible en el core bancario'), host);
+    filter.catch(new InternalServerErrorException('Servicio externo no disponible'), host);
 
     expect(status).toHaveBeenCalledWith(500);
     expect(json).toHaveBeenCalledWith({
       statusCode: 500,
-      message: 'Saldo no disponible en el core bancario',
+      message: 'Servicio externo no disponible',
       resource: undefined,
       isError: true,
     });
     expect(logger.error).toHaveBeenCalledWith(
-      'GET /api/users -> 500: Saldo no disponible en el core bancario',
+      'GET /api/users -> 500: Servicio externo no disponible',
     );
   });
 

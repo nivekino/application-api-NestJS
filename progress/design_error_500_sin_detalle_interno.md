@@ -165,10 +165,10 @@ mocks tipados; no hay nada aquí que requiera PostgreSQL) · **`red_modo: nuevo`
    request (espeja el escenario sensible que ya usa el `it()` existente del criterio 4 de la feature #2).
    Afirma: `expect(logger.error).toHaveBeenCalledWith('POST /api/users -> 500: relation "users" does not
    exist')` y `expect(logger.error).not.toHaveBeenCalledWith(expect.stringContaining('Sup3rSecreta!'))`.
-3. **Criterio 3.** `filter.catch(new InternalServerErrorException('Saldo no disponible en el core
-   bancario'), host)` con `host` de `GET /api/users`. Afirma: `status` con `500`, cuerpo con
-   `message: 'Saldo no disponible en el core bancario'`, y el log
-   `'GET /api/users -> 500: Saldo no disponible en el core bancario'`. Este caso es el que distingue
+3. **Criterio 3.** `filter.catch(new InternalServerErrorException('Servicio externo no
+   disponible'), host)` con `host` de `GET /api/users`. Afirma: `status` con `500`, cuerpo con
+   `message: 'Servicio externo no disponible'`, y el log
+   `'GET /api/users -> 500: Servicio externo no disponible'`. Este caso es el que distingue
    "500 lanzado a propósito por la app" de "500 por excepción no controlada": una implementación que
    mire el `statusCode` en vez del **tipo** de la excepción rompe justo aquí.
    *(Los errores de `class-validator` ya están cubiertos por el `it()` existente del criterio 3 de la
@@ -202,7 +202,7 @@ De la lista de acoplamientos de `.claude/agents/planner.md`, aplican tres:
 |---|---|---|
 | **4** | **`HttpExceptionFilter` global define la forma del error.** Está registrado con `@Catch()` sin argumentos: atrapa **todas** las excepciones de **todos** los endpoints. | Un cambio mal acotado (p. ej. genericizar por `statusCode === 500` en vez de por tipo) silencia mensajes legítimos de negocio en toda la API a la vez —incluidos los 4xx—, y ningún test de controller lo nota porque los controllers lanzan, no serializan. Lo blinda el criterio 3. |
 | **9** | **Winston con rotación a archivo** (`winston.config.ts`): el transporte `error` escribe `./logs/error-%DATE%.log`, `zippedArchive`, `maxFiles: '30d'`. **Los logs no son efímeros.** | El mensaje interno que movemos al log **queda 30 días en disco**. Es una decisión consciente y aceptable (el `message` de un `Error` de driver/ORM es detalle técnico, no dato de cliente), pero obliga a que la batería fije que **el cuerpo de la petición nunca entra al log** (criterio 2): si mañana alguien "enriquece" el log con `request.body`, ahí quedarían contraseñas y datos de crédito en archivo, comprimidos y rotados. |
-| **6 (D6)** | **Datos sensibles: el cambio redefine qué sale por la API y qué queda sólo en el log.** | Es el objeto mismo de la feature. Hoy un `QueryFailedError` de TypeORM devuelve al consumidor externo el SQL, el nombre de la tabla/columna y a veces el host — reconocimiento gratuito para un atacante en un dominio de banca de microcréditos. |
+| **6 (D6)** | **Datos sensibles: el cambio redefine qué sale por la API y qué queda sólo en el log.** | Es el objeto mismo de la feature. Hoy un `QueryFailedError` de TypeORM devuelve al consumidor externo el SQL, el nombre de la tabla/columna y a veces el host — reconocimiento gratuito para un atacante. |
 
 **Riesgo de contrato (no dispara D2, pero se declara):** la **forma** del cuerpo de error no cambia
 (mismas claves, mismo `statusCode`), pero el **valor** de `message` en el escenario de 500 no controlado
@@ -225,7 +225,7 @@ pasa por el interceptor, no hay doble envoltura; 5 (Swagger/`access-token`) — 
 2. El repo ya arrastra una bifurcación por `NODE_ENV` con consecuencias serias (`synchronize:
    NODE_ENV !== 'production'`); agregar una segunda hace que la respuesta a "¿qué devuelve la API?"
    dependa de una variable de entorno, y eso no se ve leyendo el controller.
-3. DEV/QA **no son entornos inocuos**: llevan datos de prueba de flujos de crédito y cobranza y
+3. DEV/QA **no son entornos inocuos**: llevan datos de prueba y
    son accesibles a más personas que producción.
 4. Haría el spec dependiente de `process.env`, con fuga de estado entre pruebas y un `it()` que pasa o
    falla según cómo se corrió Jest.

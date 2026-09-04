@@ -85,11 +85,11 @@ describe('WinstonLoggerService', () => {
   /**
    * Batería de la feature #6 (`refactor_buenas_practicas`, `red_modo: caracterizacion`):
    * `normalizarMensaje` no tenía prueba directa de la rama `message instanceof Error`.
-   * Un objeto de dominio (crédito, cobranza) NUNCA debe serializarse completo al log.
+   * Un objeto de dominio NUNCA debe serializarse completo al log.
    */
   it('error registra el message de un Error recibido como mensaje, sin serializar el objeto completo', () => {
-    logger.error(new Error('fallo al conectar con el core bancario'));
+    logger.error(new Error('fallo al conectar con el servicio externo'));
 
-    expect(winston.log).toHaveBeenCalledWith('error', 'fallo al conectar con el core bancario');
+    expect(winston.log).toHaveBeenCalledWith('error', 'fallo al conectar con el servicio externo');
   });
 });

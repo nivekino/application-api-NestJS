@@ -626,10 +626,10 @@ funciones 66→**72**, ramas 61→**64**. Re-verificado: sin el `[INFO]` de holg
 | `.claude/agents/implementer.md` | Modificado | Header (NestJS 11.2→12.0.1). |
 
 Esta feature no editó `docs/checkpoints/*` (histórico, fuera del alcance por regla explícita de
-`CLAUDE.md`). El único cambio que `git diff` muestra ahí (`CP-05-cross-cutting.md`, "Seguridad Kata" →
+`CLAUDE.md`). El único cambio que `git diff` muestra ahí (`CP-05-cross-cutting.md`, el rótulo de seguridad con marca →
 "Seguridad de datos") lo hizo el leader el 2026-09-04 como parte de la limpieza de marca registrada en
 `progress/history.md`, fuera de esta feature (Hallazgo A del reviewer). No se reintrodujo ninguna
-mención a "Kata"/"Kata Software"/"Formiik" en ningún archivo tocado.
+mención a la marca corporativa en ningún archivo tocado.
 
 ## 11.12. Decisiones de implementación (fase GREEN)
 

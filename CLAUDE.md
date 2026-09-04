@@ -1,7 +1,7 @@
 # CLAUDE.md — application-api-NestJS
 
 Guía de operación para Claude Code en este repositorio. Idioma de trabajo: **español de negocios
-(México)**. Datos de clientes (banca de microcréditos en LATAM) son **sensibles**: nunca expongas
+(México)**. Los datos de usuarios (credenciales, identidad, contacto) son **sensibles**: nunca expongas
 contraseñas, secretos ni cadenas de conexión en logs, respuestas de API ni documentación. Todo el
 trabajo es local; no envíes datos a servicios externos.
 

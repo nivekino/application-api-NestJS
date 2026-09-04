@@ -1,7 +1,7 @@
 {
   "name": "application-api-nestjs",
   "version": "0.1.0",
-  "description": "API NestJS + TypeORM/PostgreSQL para flujos de crédito y cobranza (proyecto personal de aprendizaje).",
+  "description": "API NestJS + TypeORM/PostgreSQL (proyecto personal de aprendizaje; el dominio de negocio aún no está definido).",
   "author": "nivekino",
   "private": true,
   "license": "UNLICENSED",

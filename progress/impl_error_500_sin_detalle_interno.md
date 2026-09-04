@@ -97,7 +97,7 @@ archivo de `src/` — conforme a la regla de la fase RED.
    tupla `[unknown]`, no a `any`), tal como sugiere el diseño §4.2, para evitar `no-unsafe-*` de
    `strictTypeChecked` sin recurrir a `eslint-disable`.
 4. **Escenario del criterio 3 con `InternalServerErrorException`:** se usó explícitamente una excepción
-   con `statusCode` 500 lanzada a propósito por la app (`Saldo no disponible en el core bancario`), no
+   con `statusCode` 500 lanzada a propósito por la app (`Servicio externo no disponible`), no
    un mensaje genérico, para que el caso distinga "500 de negocio" de "500 por excepción no controlada"
    — la trampa que el diseño señala en §5.3: una implementación que mire `statusCode === 500` en vez del
    tipo de la excepción rompe justo en este `it()`.
@@ -328,8 +328,8 @@ Nivel B contra PostgreSQL real, tal como exige la regla del harness, **se declar
   estrictamente a la rama `else if (exception instanceof Error)`; la rama `HttpException` (que cubre
   4xx y 5xx de negocio, incluida `InternalServerErrorException`) no cambió su lógica de decisión —
   solo se le agregó `mensajeInterno = message` al final, sin alterar qué `message` calcula. El `it()`
-  del criterio 3 confirma que un 500 de negocio (`InternalServerErrorException('Saldo no disponible en
-  el core bancario')`) sigue devolviendo su `message` real, no el genérico.
+  del criterio 3 confirma que un 500 de negocio (`InternalServerErrorException('Servicio externo no
+  disponible')`) sigue devolviendo su `message` real, no el genérico.
 - **Acoplamiento 9** (Winston, rotación a archivo `logs/error-%DATE%.log`, retención 30 días): el
   cambio mueve el `message` interno del `Error` **al log exclusivamente**; el cuerpo de la petición
   (`request.body`) nunca se interpola en la llamada a `logger.error`, tal como confirma el `it()` del

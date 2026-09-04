@@ -280,8 +280,8 @@ Restaurado (`create` sin envoltorio de vuelta). Verde de vuelta: `Test Suites: 1
 FAIL src/common/logger/winston-logger.service.spec.ts
   ● WinstonLoggerService › error registra el message de un Error recibido como mensaje, sin serializar el objeto completo
     expect(jest.fn()).toHaveBeenCalledWith(...expected)
-    Expected: "error", "fallo al conectar con el core bancario"
-    Received: "error", "Error: fallo al conectar con el core bancario"
+    Expected: "error", "fallo al conectar con el servicio externo"
+    Received: "error", "Error: fallo al conectar con el servicio externo"
 Test Suites: 1 failed, 1 total
 Tests:       1 failed, 6 passed, 7 total
 ```

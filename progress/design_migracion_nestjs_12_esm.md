@@ -282,7 +282,7 @@ De los doce acoplamientos ocultos de `.claude/agents/planner.md`, aplican **ocho
 | **4** | **`HttpExceptionFilter` global** | **Se edita** (token de inyección) | Es **el punto de mayor riesgo del cambio**: si el token queda mal, la app **no arranca** (dependencia sin resolver) — ruidoso, no silencioso. Lo cubre T7 |
 | **5** | **Prefijo `/api` y Swagger `'access-token'`** | No se edita; sube `@nestjs/swagger` a 12 (P4) | Si el nombre del esquema Bearer dejara de casar, el botón *Authorize* de `/api/docs` no aplica y **el endpoint parece roto sin estarlo**. Solo se ve en **Nivel B** |
 | **6** | **`synchronize: NODE_ENV !== 'production'` sin migraciones** | **No se toca el esquema** (typeorm sigue en 1.1.1, ninguna entidad cambia) → **no hay nada que llevar a producción** | Riesgo indirecto: si `@nestjs/typeorm` 12 cambiara el registro de metadatos de `autoLoadEntities`, `synchronize` podría **alterar el esquema de DEV/QA al arrancar**. Mitigación obligatoria: **el Nivel B se corre contra una base desechable** (contenedor de `docs/verifications.md` §1), **nunca contra DEV/QA con datos** |
-| **9** | **Winston con rotación a archivo** | **Se reimplementa el adaptador** | Todo lo que llegue al logger **queda en disco**. Por eso el servicio propio **no serializa objetos arbitrarios** (§2 regla 4) y T6 lo fija con una aserción exacta. Un `JSON.stringify(message)` cómodo convertiría cualquier objeto de crédito o cobranza en una línea persistida |
+| **9** | **Winston con rotación a archivo** | **Se reimplementa el adaptador** | Todo lo que llegue al logger **queda en disco**. Por eso el servicio propio **no serializa objetos arbitrarios** (§2 regla 4) y T6 lo fija con una aserción exacta. Un `JSON.stringify(message)` cómodo convertiría cualquier objeto de dominio en una línea persistida |
 | **12** | **Metadatos de decoradores vs. `import type`** | `LoggerService` se importa como tipo; `Injectable`, `Module`, `Global`, `Inject` **no** | Convertir a `import type` una clase que se inyecta la borra del JavaScript emitido y **la DI deja de resolverla en runtime, sin error de compilación**. Por lo mismo, **el proyecto sigue en CommonJS**: pasar a `"type": "module"` para "acompañar" a NestJS 12 rompería `emitDecoratorMetadata` en el patrón que este repo usa en cada módulo y entidad |
 
 No aplican: **7** (la entidad no sale por la API — no se tocan DTOs), **8** (bcrypt salt 10 — intacto), **10** (CORS — intacto), **11** (endurecimiento de TypeORM 1.x — la versión no cambia).
@@ -329,7 +329,7 @@ Recordatorio de calendario ya registrado en `docs/verifications.md` §6.1: **Nod
 
 ### B. Sustituir Winston por el `ConsoleLogger` de NestJS 12 *(descartada)*
 
-Cero dependencias y cero adaptador, pero se pierde la **rotación diaria a archivo** (`logs/error-*.log`, `logs/application-*.log`, `maxFiles` 30d/14d). Esa bitácora es la evidencia operativa de un sistema de crédito y cobranza. Cambiar la política de retención de logs es una decisión de negocio, no un efecto colateral de subir el framework.
+Cero dependencias y cero adaptador, pero se pierde la **rotación diaria a archivo** (`logs/error-*.log`, `logs/application-*.log`, `maxFiles` 30d/14d). Esa bitácora es la evidencia operativa de la aplicación. Cambiar la política de retención de logs es una decisión de negocio, no un efecto colateral de subir el framework.
 
 ### C. Quedarse en NestJS 11 *(descartada por definición)*
 
